@@ -104,6 +104,7 @@ def _teacher(
     seed: int,
     device: str,
     pooled_targets: bool = False,
+    condition_on_cell_type: bool = True,
 ) -> dict:
     import torch
 
@@ -131,9 +132,22 @@ def _teacher(
             target = dataset.target[target_specimen]
             target_values = target.values
             target_labels = target.cell_types.astype(str)
-        for cell_type in sorted(set(source_labels) & set(target_labels)):
-            source_rows = np.flatnonzero(source_labels == cell_type)
-            target_rows = np.flatnonzero(target_labels == cell_type)
+        if condition_on_cell_type:
+            blocks = [
+                (
+                    np.flatnonzero(source_labels == cell_type),
+                    np.flatnonzero(target_labels == cell_type),
+                )
+                for cell_type in sorted(set(source_labels) & set(target_labels))
+            ]
+        else:
+            blocks = [
+                (
+                    np.arange(source.values.shape[0]),
+                    np.arange(target_values.shape[0]),
+                )
+            ]
+        for source_rows, target_rows in blocks:
             k = min(k_max, source_rows.size, target_rows.size)
             if k < k_min:
                 continue
@@ -161,7 +175,7 @@ def _teacher(
             common.append(source_h)
             exclusive.append(source.values[source_rows, n_common:])
             targets.append(barycentric_projection(plan, target_y).cpu().numpy())
-            labels.append(np.repeat(cell_type, k))
+            labels.append(source_labels[source_rows])
             groups.append(np.repeat(specimen, k))
             block_count += 1
     return {
@@ -225,6 +239,20 @@ def _pooled_predictions(predictions: Mapping[str, np.ndarray]) -> dict[str, np.n
     return {"pooled": np.concatenate([predictions[key] for key in sorted(predictions)])}
 
 
+def _without_cell_type_strata(view: dict) -> dict:
+    return {
+        **view,
+        "source_labels": {
+            specimen: np.repeat("All", len(values))
+            for specimen, values in view["source_h"].items()
+        },
+        "target_labels": {
+            specimen: np.repeat("All", len(values))
+            for specimen, values in view["target_y"].items()
+        },
+    }
+
+
 def _evaluate(
     predictions: Mapping[str, np.ndarray], view: dict, scales: np.ndarray
 ) -> dict:
@@ -239,29 +267,45 @@ def _evaluate(
     )
 
 
-def _baseline_predictions(model, view: dict) -> dict[str, np.ndarray]:
+def _baseline_predictions(
+    model, view: dict, *, condition_on_cell_type: bool = True
+) -> dict[str, np.ndarray]:
     return {
         specimen: model.predict(
             view["source_h"][specimen],
-            cell_types=view["source_labels"][specimen],
+            cell_types=(
+                view["source_labels"][specimen] if condition_on_cell_type else None
+            ),
         )
         for specimen in view["source_h"]
     }
 
 
-def _knn_predictions_with_diagnostics(model, view: dict):
+def _knn_predictions_with_diagnostics(
+    model, view: dict, *, condition_on_cell_type: bool = True
+):
     predictions = {}
     diagnostics = {}
     for specimen in view["source_h"]:
         predictions[specimen], diagnostics[specimen] = model.predict(
             view["source_h"][specimen],
-            cell_types=view["source_labels"][specimen],
+            cell_types=(
+                view["source_labels"][specimen] if condition_on_cell_type else None
+            ),
             return_diagnostics=True,
         )
     return predictions, diagnostics
 
 
-def _mlp_predictions(model: MLPRegressor, view: dict, classes, device, use_x: bool):
+def _mlp_predictions(
+    model: MLPRegressor,
+    view: dict,
+    classes,
+    device,
+    use_x: bool,
+    *,
+    include_cell_types: bool = True,
+):
     return {
         specimen: model.predict(
             encode_features(
@@ -269,6 +313,7 @@ def _mlp_predictions(model: MLPRegressor, view: dict, classes, device, use_x: bo
                 view["source_x"][specimen] if use_x else None,
                 view["source_labels"][specimen],
                 classes,
+                include_cell_types=include_cell_types,
             ),
             device=device,
         )
@@ -436,11 +481,25 @@ def run_experiment(config: dict) -> dict:
     target_groups = target_groups[fit_rows]
     scales = _marker_scale(target_y)
     classes = tuple(COARSE_CELL_TYPES)
-
-    ridge = HOnlyRegressor(condition_on_cell_type=True).fit(
-        target_h, target_y, cell_types=target_labels
+    label_conditioning = bool(config["training"].get("label_conditioning", True))
+    selection_uses_cell_types = bool(
+        config["evaluation"].get(
+            "label_stratified_selection", label_conditioning
+        )
     )
-    direct_features = encode_features(target_h, None, target_labels, classes)
+
+    ridge = HOnlyRegressor(condition_on_cell_type=label_conditioning).fit(
+        target_h,
+        target_y,
+        cell_types=target_labels if label_conditioning else None,
+    )
+    direct_features = encode_features(
+        target_h,
+        None,
+        target_labels,
+        classes,
+        include_cell_types=label_conditioning,
+    )
     direct_mlp = _mlp(config["training"]["mlp"], seed + 10).fit(
         direct_features, target_y, groups=target_groups, device=device
     )
@@ -448,14 +507,14 @@ def run_experiment(config: dict) -> dict:
     type_median = CellTypeMedianRegressor().fit(target_y, target_labels)
     knn = CyTOFMergeRegressor(
         k=int(config["training"]["knn"]["k"]),
-        condition_on_cell_type=True,
+        condition_on_cell_type=label_conditioning,
         max_reference_cells=int(config["training"]["knn"]["max_reference_cells"]),
         n_jobs=int(config["training"]["knn"]["n_jobs"]),
         random_state=seed,
     ).fit(
         target_h,
         target_y,
-        reference_cell_types=target_labels,
+        reference_cell_types=target_labels if label_conditioning else None,
         reference_groups=target_groups,
     )
     residual_baseline_name = str(
@@ -475,15 +534,25 @@ def run_experiment(config: dict) -> dict:
         config["evaluation"].get("uncertainty_diagnostics", False)
     )
     test_knn_diagnostics = None
-    validation_knn = _baseline_predictions(knn, validation)
+    validation_knn = _baseline_predictions(
+        knn, validation, condition_on_cell_type=label_conditioning
+    )
     if diagnostics_enabled:
-        test_knn, test_knn_diagnostics = _knn_predictions_with_diagnostics(knn, test)
+        test_knn, test_knn_diagnostics = _knn_predictions_with_diagnostics(
+            knn, test, condition_on_cell_type=label_conditioning
+        )
     else:
-        test_knn = _baseline_predictions(knn, test)
+        test_knn = _baseline_predictions(
+            knn, test, condition_on_cell_type=label_conditioning
+        )
     baseline_predictions = {
         "ridge_hl": (
-            _baseline_predictions(ridge, validation),
-            _baseline_predictions(ridge, test),
+            _baseline_predictions(
+                ridge, validation, condition_on_cell_type=label_conditioning
+            ),
+            _baseline_predictions(
+                ridge, test, condition_on_cell_type=label_conditioning
+            ),
         ),
         "knn_hl": (validation_knn, test_knn),
     }
@@ -501,8 +570,22 @@ def run_experiment(config: dict) -> dict:
             for specimen in view["source_h"]
         }
 
-    validation_direct = _mlp_predictions(direct_mlp, validation, classes, device, False)
-    test_direct = _mlp_predictions(direct_mlp, test, classes, device, False)
+    validation_direct = _mlp_predictions(
+        direct_mlp,
+        validation,
+        classes,
+        device,
+        False,
+        include_cell_types=label_conditioning,
+    )
+    test_direct = _mlp_predictions(
+        direct_mlp,
+        test,
+        classes,
+        device,
+        False,
+        include_cell_types=label_conditioning,
+    )
     shared_predictions = {
         "global_median": (global_predictions(validation), global_predictions(test)),
         "cell_type_median": (
@@ -579,14 +662,22 @@ def run_experiment(config: dict) -> dict:
                 seed=seed + 20,
                 device=device,
                 pooled_targets=pairing == "unpaired",
+                condition_on_cell_type=label_conditioning,
             )
             teacher_blocks = teacher["n_blocks"]
             teacher_baseline = baseline.predict(
-                teacher["common"], cell_types=teacher["labels"]
+                teacher["common"],
+                cell_types=teacher["labels"] if label_conditioning else None,
             )
             residual_target = teacher["targets"] - teacher_baseline
             ot_hl = _mlp(config["training"]["mlp"], seed + 30).fit(
-                encode_features(teacher["common"], None, teacher["labels"], classes),
+                encode_features(
+                    teacher["common"],
+                    None,
+                    teacher["labels"],
+                    classes,
+                    include_cell_types=label_conditioning,
+                ),
                 residual_target,
                 groups=teacher["groups"],
                 device=device,
@@ -597,19 +688,44 @@ def run_experiment(config: dict) -> dict:
                     teacher["exclusive"],
                     teacher["labels"],
                     classes,
+                    include_cell_types=label_conditioning,
                 ),
                 residual_target,
                 groups=teacher["groups"],
                 device=device,
             )
             validation_ot_hl = _mlp_predictions(
-                ot_hl, validation, classes, device, False
+                ot_hl,
+                validation,
+                classes,
+                device,
+                False,
+                include_cell_types=label_conditioning,
             )
-            test_ot_hl = _mlp_predictions(ot_hl, test, classes, device, False)
+            test_ot_hl = _mlp_predictions(
+                ot_hl,
+                test,
+                classes,
+                device,
+                False,
+                include_cell_types=label_conditioning,
+            )
             validation_proposed = _mlp_predictions(
-                proposed, validation, classes, device, True
+                proposed,
+                validation,
+                classes,
+                device,
+                True,
+                include_cell_types=label_conditioning,
             )
-            test_proposed = _mlp_predictions(proposed, test, classes, device, True)
+            test_proposed = _mlp_predictions(
+                proposed,
+                test,
+                classes,
+                device,
+                True,
+                include_cell_types=label_conditioning,
+            )
             if selection_pairing == "unpaired":
                 selection_view = _pooled_view(validation)
                 selection_baseline = _pooled_predictions(validation_baseline)
@@ -620,6 +736,8 @@ def run_experiment(config: dict) -> dict:
                 selection_baseline = validation_baseline
                 selection_ot_hl = validation_ot_hl
                 selection_proposed = validation_proposed
+            if not selection_uses_cell_types:
+                selection_view = _without_cell_type_strata(selection_view)
             ot_hl_alpha, ot_hl_curve = _select_alpha(
                 selection_baseline,
                 selection_ot_hl,
@@ -711,6 +829,7 @@ def run_experiment(config: dict) -> dict:
                 source_common_columns=dataset.source_common_columns,
                 source_exclusive_columns=dataset.source_exclusive_columns,
                 target_markers=dataset.target_exclusive_columns,
+                label_conditioning=label_conditioning,
             )
             model.save(output / model_name)
             model_path = str(output / model_name)
@@ -735,10 +854,17 @@ def run_experiment(config: dict) -> dict:
         "residual_baseline": residual_baseline_name,
         "pairing": pairing,
         "selection_pairing": selection_pairing,
+        "label_usage": {
+            "training_conditioning": label_conditioning,
+            "validation_selection_stratified": selection_uses_cell_types,
+            "test_evaluation_stratified": True,
+            "label_assisted_methods": ["cell_type_median"],
+        },
         "hardware": hardware,
         "direction": f"{dataset.source_modality}_to_{dataset.target_modality}",
         "markers": {
             "common": list(dataset.common_markers),
+            "omitted_common": list(dataset.omitted_common_markers),
             "source_exclusive": list(dataset.source_exclusive_columns),
             "target_exclusive": list(dataset.target_exclusive_columns),
         },

@@ -23,6 +23,7 @@ preprocessing:
 training:
   device: cuda
   max_fit_cells: 250000
+  label_conditioning: true
   residual_baseline: ridge_hl
   ot:
     k_max: 256

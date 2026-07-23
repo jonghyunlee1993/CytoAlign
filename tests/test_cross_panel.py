@@ -51,3 +51,54 @@ def test_cross_panel_loader_aligns_aliases_and_excludes_technical_markers(tmp_pa
     assert dataset.source_exclusive_columns == ("X",)
     assert dataset.target_exclusive_columns == ("Y",)
     assert dataset.source["R0000_A"].values.shape == (10, 3)
+
+
+def test_cross_panel_loader_keeps_endpoints_fixed_when_common_markers_are_reduced(
+    tmp_path,
+):
+    for modality in ("source", "target"):
+        (tmp_path / modality / "cells").mkdir(parents=True)
+        (tmp_path / modality / "labels").mkdir()
+    for index in range(4):
+        specimen = f"R{index:04d}_A"
+        pd.DataFrame(
+            {
+                "CD3": np.arange(20),
+                "PD-1": np.arange(20) + 1,
+                "X": np.arange(20) + 2,
+            }
+        ).to_csv(tmp_path / "source" / "cells" / f"{specimen}.csv", index=False)
+        pd.DataFrame(
+            {
+                "CD3": np.arange(20),
+                "CD279": np.arange(20) + 1,
+                "Y": np.arange(20) + 3,
+            }
+        ).to_csv(tmp_path / "target" / "cells" / f"{specimen}.csv", index=False)
+        labels = pd.DataFrame({"label": ["T cell"] * 20})
+        labels.to_csv(tmp_path / "source" / "labels" / f"{specimen}.csv", index=False)
+        labels.to_csv(tmp_path / "target" / "labels" / f"{specimen}.csv", index=False)
+
+    dataset = load_cross_panel_dataset(
+        {
+            "root": str(tmp_path),
+            "source_modality": "source",
+            "target_modality": "target",
+            "common_markers": ["CD3"],
+            "max_cells_per_specimen": 10,
+            "chunk_size": 7,
+            "sample_seed": 1,
+            "split": {
+                "n_splits": 2,
+                "seed": 2,
+                "validation_fraction": 0.5,
+            },
+        }
+    )
+
+    assert dataset.common_markers == ("CD3",)
+    assert dataset.omitted_common_markers == ("PD-1",)
+    assert dataset.source_exclusive_columns == ("X",)
+    assert dataset.target_exclusive_columns == ("Y",)
+    assert dataset.source["R0000_A"].markers == ("CD3", "X")
+    assert dataset.target["R0000_A"].markers == ("CD3", "Y")

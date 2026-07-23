@@ -1,0 +1,15 @@
+extends: sf_to_cytof_nolabel_backbone12_paired.yaml
+
+experiment:
+  name: sf_to_cytof_nolabel_minimal8_paired
+
+data:
+  common_markers:
+    - CD45
+    - CD3
+    - CD19
+    - CD56
+    - CD14
+    - CD33
+    - CD34
+    - CD117

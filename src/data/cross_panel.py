@@ -12,6 +12,7 @@ from src.data.markers import (
     DEFAULT_TECHNICAL_MARKERS,
     PairMarkerManifest,
     build_pair_marker_manifest,
+    canonical_marker_name,
 )
 from src.data.splits import (
     build_patient_grouped_manifest,
@@ -31,6 +32,7 @@ class CrossPanelDataset:
     source: dict[str, SpecimenData]
     target: dict[str, SpecimenData]
     splits: dict
+    omitted_common_markers: tuple[str, ...] = ()
 
 
 def _header(path: Path) -> tuple[str, ...]:
@@ -61,6 +63,35 @@ def load_cross_panel_dataset(config: dict) -> CrossPanelDataset:
     source_header = _header(root / source_modality / "cells" / f"{specimens[0]}.csv")
     target_header = _header(root / target_modality / "cells" / f"{specimens[0]}.csv")
     marker_manifest = build_pair_marker_manifest(source_header, target_header)
+    configured_common = config.get("common_markers")
+    if configured_common is None:
+        common_markers = marker_manifest.common_markers
+    else:
+        common_markers = tuple(
+            canonical_marker_name(marker) for marker in configured_common
+        )
+        if len(set(common_markers)) != len(common_markers):
+            raise ValueError("Configured common markers contain duplicates")
+        unknown = sorted(set(common_markers) - set(marker_manifest.common_markers))
+        if unknown:
+            raise ValueError(
+                f"Configured common markers are not shared by both panels: {unknown}"
+            )
+        if not common_markers:
+            raise ValueError("At least one common marker is required")
+    source_common_lookup = dict(
+        zip(marker_manifest.common_markers, marker_manifest.source_common_columns)
+    )
+    target_common_lookup = dict(
+        zip(marker_manifest.common_markers, marker_manifest.target_common_columns)
+    )
+    source_common = tuple(source_common_lookup[marker] for marker in common_markers)
+    target_common = tuple(target_common_lookup[marker] for marker in common_markers)
+    omitted_common = tuple(
+        marker
+        for marker in marker_manifest.common_markers
+        if marker not in set(common_markers)
+    )
     source_exclusive = _biological_source_columns(marker_manifest)
     target_exclusive = marker_manifest.target_primary_exclusive_columns
     if not source_exclusive or not target_exclusive:
@@ -70,8 +101,8 @@ def load_cross_panel_dataset(config: dict) -> CrossPanelDataset:
     chunk_size = int(config["chunk_size"])
     seed = int(config["sample_seed"])
     sampling = str(config.get("sampling", "reservoir"))
-    source_columns = marker_manifest.source_common_columns + source_exclusive
-    target_columns = marker_manifest.target_common_columns + target_exclusive
+    source_columns = source_common + source_exclusive
+    target_columns = target_common + target_exclusive
     source = {}
     target = {}
     for index, specimen in enumerate(specimens):
@@ -121,12 +152,13 @@ def load_cross_panel_dataset(config: dict) -> CrossPanelDataset:
     return CrossPanelDataset(
         source_modality=source_modality,
         target_modality=target_modality,
-        common_markers=marker_manifest.common_markers,
-        source_common_columns=marker_manifest.source_common_columns,
-        target_common_columns=marker_manifest.target_common_columns,
+        common_markers=common_markers,
+        source_common_columns=source_common,
+        target_common_columns=target_common,
         source_exclusive_columns=source_exclusive,
         target_exclusive_columns=target_exclusive,
         source=source,
         target=target,
         splits=splits,
+        omitted_common_markers=omitted_common,
     )

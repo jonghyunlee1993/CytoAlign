@@ -17,18 +17,21 @@ from src.preprocessing.common_space import CrossPanelCommonSpace
 def encode_features(
     common: np.ndarray,
     exclusive: np.ndarray | None,
-    cell_types: Sequence,
+    cell_types: Sequence | None,
     classes: Sequence[str],
+    *,
+    include_cell_types: bool = True,
 ) -> np.ndarray:
-    labels = np.asarray(cell_types).astype(str)
-    lookup = {label: index for index, label in enumerate(classes)}
-    one_hot = np.zeros((labels.size, len(classes)), dtype=np.float32)
-    for index, label in enumerate(labels):
-        one_hot[index, lookup[label]] = 1.0
     pieces = [np.asarray(common, dtype=np.float32)]
     if exclusive is not None:
         pieces.append(np.asarray(exclusive, dtype=np.float32))
-    pieces.append(one_hot)
+    if include_cell_types:
+        labels = np.asarray(cell_types).astype(str)
+        lookup = {label: index for index, label in enumerate(classes)}
+        one_hot = np.zeros((labels.size, len(classes)), dtype=np.float32)
+        for index, label in enumerate(labels):
+            one_hot[index, lookup[label]] = 1.0
+        pieces.append(one_hot)
     return np.concatenate(pieces, axis=1)
 
 
@@ -46,6 +49,7 @@ class CytoAlign:
         source_common_columns: Sequence[str],
         source_exclusive_columns: Sequence[str],
         target_markers: Sequence[str],
+        label_conditioning: bool = True,
     ):
         self.common_space = common_space
         self.baseline = baseline
@@ -57,20 +61,28 @@ class CytoAlign:
         self.source_common_columns = tuple(source_common_columns)
         self.source_exclusive_columns = tuple(source_exclusive_columns)
         self.target_markers = tuple(target_markers)
+        self.label_conditioning = bool(label_conditioning)
 
     def predict(
         self,
         source_common: np.ndarray,
         source_exclusive: np.ndarray,
-        cell_types: Sequence,
+        cell_types: Sequence | None,
         *,
         device: str = "cpu",
     ) -> np.ndarray:
         common = self.common_space.source_percentiles(source_common)
-        baseline = self.baseline.predict(common, cell_types=cell_types)
+        labels = cell_types if self.label_conditioning else None
+        baseline = self.baseline.predict(common, cell_types=labels)
         if self.residual is None or self.alpha == 0:
             return baseline
-        features = encode_features(common, source_exclusive, cell_types, self.classes)
+        features = encode_features(
+            common,
+            source_exclusive,
+            labels,
+            self.classes,
+            include_cell_types=self.label_conditioning,
+        )
         residual = self.residual.predict(features, device=device)
         return baseline + self.alpha * residual
 

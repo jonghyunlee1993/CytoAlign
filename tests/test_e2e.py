@@ -52,9 +52,12 @@ def _specimen(specimen_id, source, rng):
     )
 
 
-@pytest.mark.parametrize("residual_baseline", ["ridge_hl", "knn_hl"])
+@pytest.mark.parametrize(
+    ("residual_baseline", "label_conditioning"),
+    [("ridge_hl", True), ("knn_hl", True), ("knn_hl", False)],
+)
 def test_end_to_end_training_writes_model_and_metrics(
-    tmp_path, monkeypatch, residual_baseline
+    tmp_path, monkeypatch, residual_baseline, label_conditioning
 ):
     rng = np.random.RandomState(3)
     specimens = [f"R{index:04d}_A" for index in range(5)]
@@ -81,7 +84,7 @@ def test_end_to_end_training_writes_model_and_metrics(
     monkeypatch.setattr(experiment, "load_cross_panel_dataset", lambda _: dataset)
     config = {
         "experiment": {
-            "name": f"test_{residual_baseline}",
+            "name": f"test_{residual_baseline}_{label_conditioning}",
             "fold": 0,
             "seed": 7,
         },
@@ -91,6 +94,7 @@ def test_end_to_end_training_writes_model_and_metrics(
             "device": "cpu",
             "max_fit_cells": 1000,
             "residual_baseline": residual_baseline,
+            "label_conditioning": label_conditioning,
             "ot": {
                 "k_max": 6,
                 "k_min": 4,
@@ -106,7 +110,10 @@ def test_end_to_end_training_writes_model_and_metrics(
             },
             "knn": {"k": 3, "max_reference_cells": 1000, "n_jobs": 1},
         },
-        "evaluation": {"alphas": [0.0, 1.0]},
+        "evaluation": {
+            "alphas": [0.0, 1.0],
+            "label_stratified_selection": label_conditioning,
+        },
         "output": {"root": str(tmp_path)},
     }
 
@@ -121,12 +128,22 @@ def test_end_to_end_training_writes_model_and_metrics(
         "ot_hl",
         "cytoalign",
     }
-    output = tmp_path / f"test_{residual_baseline}" / "fold_0" / "seed_7"
+    output = (
+        tmp_path
+        / f"test_{residual_baseline}_{label_conditioning}"
+        / "fold_0"
+        / "seed_7"
+    )
     assert (output / "model.pkl").exists()
     assert (output / "metrics.json").exists()
     assert result["residual_baseline"] == residual_baseline
     assert result["pairing"] == "matched"
     assert result["selection_pairing"] == "matched"
+    assert result["label_usage"]["training_conditioning"] is label_conditioning
+    assert (
+        result["label_usage"]["validation_selection_stratified"]
+        is label_conditioning
+    )
     model = CytoAlign.load(result["model"])
     source = dataset.source[specimens[-1]]
     prediction = model.predict(
@@ -136,4 +153,5 @@ def test_end_to_end_training_writes_model_and_metrics(
         device="cpu",
     )
     assert model.source_modality == "source"
+    assert model.label_conditioning is label_conditioning
     assert prediction.shape == (40, 2)

@@ -1,0 +1,11 @@
+extends: sf_to_cytof_nolabel_minimal8_paired.yaml
+
+experiment:
+  name: sf_to_cytof_nolabel_minimal8_unpaired
+
+training:
+  ot:
+    pairing: unpaired
+
+evaluation:
+  selection_pairing: unpaired
