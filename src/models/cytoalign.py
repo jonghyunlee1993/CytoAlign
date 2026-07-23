@@ -37,7 +37,7 @@ class CytoAlign:
         *,
         common_space: CrossPanelCommonSpace,
         baseline: HOnlyRegressor,
-        residual: MLPRegressor,
+        residual: MLPRegressor | None,
         classes: Sequence[str],
         alpha: float,
         source_modality: str,
@@ -67,6 +67,8 @@ class CytoAlign:
     ) -> np.ndarray:
         common = self.common_space.source_percentiles(source_common)
         baseline = self.baseline.predict(common, cell_types=cell_types)
+        if self.residual is None or self.alpha == 0:
+            return baseline
         features = encode_features(common, source_exclusive, cell_types, self.classes)
         residual = self.residual.predict(features, device=device)
         return baseline + self.alpha * residual
@@ -74,7 +76,8 @@ class CytoAlign:
     def save(self, path: str | Path) -> None:
         output = Path(path)
         output.parent.mkdir(parents=True, exist_ok=True)
-        self.residual.cpu()
+        if self.residual is not None:
+            self.residual.cpu()
         with output.open("wb") as handle:
             pickle.dump(self, handle)
 

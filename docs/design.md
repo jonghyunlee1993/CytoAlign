@@ -34,6 +34,20 @@ type `L`. It does not use target cells or optimal transport.
 
 The `ot_hl` comparison isolates whether source-exclusive markers add value.
 
+## Paired-specimen dose response
+
+For fold 0, target-training data, preprocessing, validation/test specimens, and
+all baselines are fixed within each seed. Only the number of training specimens
+whose source-target identity is exposed to the OT teacher changes:
+
+`0, 1, 2, 4, 8, 16, 32`
+
+The sets are nested prefixes of one seed-specific permutation. Count zero is
+exactly the Ridge `H+L` baseline. The aggregate reports raw-count and
+doubling-scale linear fits, monotonic improvement steps, the first count that
+beats each baseline, and the first count where `H+X+L` beats `H+L` OT
+distillation.
+
 ## Primary evaluation
 
 All methods are evaluated on unseen paired specimens without constructing cell

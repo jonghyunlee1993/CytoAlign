@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import random
+import socket
 import time
 from pathlib import Path
 from typing import Mapping, Sequence
@@ -249,8 +251,14 @@ def _mlp(config: dict, seed: int) -> MLPRegressor:
     )
 
 
+def _paired_subset(specimens: Sequence[str], count: int, seed: int) -> tuple[str, ...]:
+    ordered = np.asarray(sorted(specimens), dtype=object)
+    permutation = np.random.RandomState(seed).permutation(ordered)
+    return tuple(map(str, permutation[: int(count)]))
+
+
 def run_experiment(config: dict) -> dict:
-    """Run one fold and seed, save metrics and a deployable model bundle."""
+    """Run one fold and seed, optionally sweeping paired-specimen counts."""
 
     import torch
 
@@ -260,6 +268,24 @@ def run_experiment(config: dict) -> dict:
     device = str(config["training"]["device"])
     if device == "cuda" and not torch.cuda.is_available():
         raise RuntimeError("CUDA was requested but is unavailable")
+    hardware = {"host": socket.gethostname(), "device": device}
+    if device == "cuda":
+        probe = torch.randn(1024, 1024, device=device) @ torch.randn(
+            1024, 1024, device=device
+        )
+        torch.cuda.synchronize()
+        if not torch.isfinite(probe).all():
+            raise RuntimeError("CUDA matrix multiplication failed")
+        properties = torch.cuda.get_device_properties(0)
+        hardware.update(
+            {
+                "gpu": torch.cuda.get_device_name(0),
+                "gpu_memory_bytes": int(properties.total_memory),
+                "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+                "torch": torch.__version__,
+                "cuda": torch.version.cuda,
+            }
+        )
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -300,34 +326,6 @@ def run_experiment(config: dict) -> dict:
     direct_mlp = _mlp(config["training"]["mlp"], seed + 10).fit(
         direct_features, target_y, groups=target_groups, device=device
     )
-    teacher = _teacher(
-        dataset,
-        train_specimens,
-        common_space,
-        k_max=int(config["training"]["ot"]["k_max"]),
-        k_min=int(config["training"]["ot"]["k_min"]),
-        epsilon_ratio=float(config["training"]["ot"]["epsilon_ratio"]),
-        sinkhorn_iterations=int(config["training"]["ot"]["sinkhorn_iterations"]),
-        seed=seed + 20,
-        device=device,
-    )
-    teacher_baseline = baseline.predict(teacher["common"], cell_types=teacher["labels"])
-    residual_target = teacher["targets"] - teacher_baseline
-    ot_hl = _mlp(config["training"]["mlp"], seed + 30).fit(
-        encode_features(teacher["common"], None, teacher["labels"], classes),
-        residual_target,
-        groups=teacher["groups"],
-        device=device,
-    )
-    proposed = _mlp(config["training"]["mlp"], seed + 40).fit(
-        encode_features(
-            teacher["common"], teacher["exclusive"], teacher["labels"], classes
-        ),
-        residual_target,
-        groups=teacher["groups"],
-        device=device,
-    )
-
     global_median = GlobalMedianRegressor().fit(target_y)
     type_median = CellTypeMedianRegressor().fit(target_y, target_labels)
     knn = CyTOFMergeRegressor(
@@ -347,17 +345,6 @@ def run_experiment(config: dict) -> dict:
     test = _split_view(dataset, test_specimens, common_space)
     validation_baseline = _baseline_predictions(baseline, validation)
     test_baseline = _baseline_predictions(baseline, test)
-    validation_ot_hl = _mlp_predictions(ot_hl, validation, classes, device, False)
-    test_ot_hl = _mlp_predictions(ot_hl, test, classes, device, False)
-    validation_proposed = _mlp_predictions(proposed, validation, classes, device, True)
-    test_proposed = _mlp_predictions(proposed, test, classes, device, True)
-    alphas = tuple(map(float, config["evaluation"]["alphas"]))
-    ot_hl_alpha, ot_hl_curve = _select_alpha(
-        validation_baseline, validation_ot_hl, validation, scales, alphas
-    )
-    proposed_alpha, proposed_curve = _select_alpha(
-        validation_baseline, validation_proposed, validation, scales, alphas
-    )
 
     def median_predictions(model, view):
         return {
@@ -382,7 +369,7 @@ def run_experiment(config: dict) -> dict:
 
     validation_direct = _mlp_predictions(direct_mlp, validation, classes, device, False)
     test_direct = _mlp_predictions(direct_mlp, test, classes, device, False)
-    predictions = {
+    shared_predictions = {
         "global_median": (global_predictions(validation), global_predictions(test)),
         "cell_type_median": (
             median_predictions(type_median, validation),
@@ -391,31 +378,14 @@ def run_experiment(config: dict) -> dict:
         "ridge_hl": (validation_baseline, test_baseline),
         "knn_hl": (knn_predictions(validation), knn_predictions(test)),
         "mlp_hl": (validation_direct, test_direct),
-        "ot_hl": (
-            _add(validation_baseline, validation_ot_hl, ot_hl_alpha),
-            _add(test_baseline, test_ot_hl, ot_hl_alpha),
-        ),
-        "cytoalign": (
-            _add(validation_baseline, validation_proposed, proposed_alpha),
-            _add(test_baseline, test_proposed, proposed_alpha),
-        ),
     }
-    methods = {
+    shared_methods = {
         name: {
             "validation": _evaluate(validation_prediction, validation, scales),
             "test": _evaluate(test_prediction, test, scales),
         }
-        for name, (validation_prediction, test_prediction) in predictions.items()
+        for name, (validation_prediction, test_prediction) in shared_predictions.items()
     }
-    methods["ot_hl"].update(
-        {"selected_alpha": ot_hl_alpha, "validation_alpha_curve": ot_hl_curve}
-    )
-    methods["cytoalign"].update(
-        {
-            "selected_alpha": proposed_alpha,
-            "validation_alpha_curve": proposed_curve,
-        }
-    )
 
     output = (
         Path(config["output"]["root"])
@@ -424,24 +394,143 @@ def run_experiment(config: dict) -> dict:
         / f"seed_{seed}"
     )
     output.mkdir(parents=True, exist_ok=True)
-    model = CytoAlign(
-        common_space=common_space,
-        baseline=baseline,
-        residual=proposed,
-        classes=classes,
-        alpha=proposed_alpha,
-        source_modality=dataset.source_modality,
-        target_modality=dataset.target_modality,
-        source_common_columns=dataset.source_common_columns,
-        source_exclusive_columns=dataset.source_exclusive_columns,
-        target_markers=dataset.target_exclusive_columns,
-    )
-    model.save(output / "model.pkl")
+
+    paired_counts = config["experiment"].get("paired_counts")
+    curve_mode = paired_counts is not None
+    if paired_counts is None:
+        paired_counts = [len(train_specimens)]
+    paired_counts = tuple(map(int, paired_counts))
+    alphas = tuple(map(float, config["evaluation"]["alphas"]))
+    paired_curve = {}
+    for paired_count in paired_counts:
+        point_started = time.time()
+        paired_specimens = _paired_subset(train_specimens, paired_count, seed + 19)
+        if paired_count == 0:
+            teacher_blocks = 0
+            proposed = None
+            ot_hl_alpha = proposed_alpha = 0.0
+            ot_hl_curve = proposed_curve = {
+                str(alpha): shared_methods["ridge_hl"]["validation"][
+                    "patient_first_normalized_wasserstein"
+                ]
+                for alpha in alphas
+            }
+            validation_ot_prediction = validation_baseline
+            test_ot_prediction = test_baseline
+            validation_proposed_prediction = validation_baseline
+            test_proposed_prediction = test_baseline
+        else:
+            teacher = _teacher(
+                dataset,
+                paired_specimens,
+                common_space,
+                k_max=int(config["training"]["ot"]["k_max"]),
+                k_min=int(config["training"]["ot"]["k_min"]),
+                epsilon_ratio=float(config["training"]["ot"]["epsilon_ratio"]),
+                sinkhorn_iterations=int(
+                    config["training"]["ot"]["sinkhorn_iterations"]
+                ),
+                seed=seed + 20,
+                device=device,
+            )
+            teacher_blocks = teacher["n_blocks"]
+            teacher_baseline = baseline.predict(
+                teacher["common"], cell_types=teacher["labels"]
+            )
+            residual_target = teacher["targets"] - teacher_baseline
+            ot_hl = _mlp(config["training"]["mlp"], seed + 30).fit(
+                encode_features(teacher["common"], None, teacher["labels"], classes),
+                residual_target,
+                groups=teacher["groups"],
+                device=device,
+            )
+            proposed = _mlp(config["training"]["mlp"], seed + 40).fit(
+                encode_features(
+                    teacher["common"],
+                    teacher["exclusive"],
+                    teacher["labels"],
+                    classes,
+                ),
+                residual_target,
+                groups=teacher["groups"],
+                device=device,
+            )
+            validation_ot_hl = _mlp_predictions(
+                ot_hl, validation, classes, device, False
+            )
+            test_ot_hl = _mlp_predictions(ot_hl, test, classes, device, False)
+            validation_proposed = _mlp_predictions(
+                proposed, validation, classes, device, True
+            )
+            test_proposed = _mlp_predictions(proposed, test, classes, device, True)
+            ot_hl_alpha, ot_hl_curve = _select_alpha(
+                validation_baseline,
+                validation_ot_hl,
+                validation,
+                scales,
+                alphas,
+            )
+            proposed_alpha, proposed_curve = _select_alpha(
+                validation_baseline,
+                validation_proposed,
+                validation,
+                scales,
+                alphas,
+            )
+            validation_ot_prediction = _add(
+                validation_baseline, validation_ot_hl, ot_hl_alpha
+            )
+            test_ot_prediction = _add(test_baseline, test_ot_hl, ot_hl_alpha)
+            validation_proposed_prediction = _add(
+                validation_baseline, validation_proposed, proposed_alpha
+            )
+            test_proposed_prediction = _add(
+                test_baseline, test_proposed, proposed_alpha
+            )
+
+        methods = dict(shared_methods)
+        methods["ot_hl"] = {
+            "selected_alpha": ot_hl_alpha,
+            "validation_alpha_curve": ot_hl_curve,
+            "validation": _evaluate(validation_ot_prediction, validation, scales),
+            "test": _evaluate(test_ot_prediction, test, scales),
+        }
+        methods["cytoalign"] = {
+            "selected_alpha": proposed_alpha,
+            "validation_alpha_curve": proposed_curve,
+            "validation": _evaluate(validation_proposed_prediction, validation, scales),
+            "test": _evaluate(test_proposed_prediction, test, scales),
+        }
+        model_name = f"model_paired_{paired_count}.pkl" if curve_mode else "model.pkl"
+        model = CytoAlign(
+            common_space=common_space,
+            baseline=baseline,
+            residual=proposed,
+            classes=classes,
+            alpha=proposed_alpha,
+            source_modality=dataset.source_modality,
+            target_modality=dataset.target_modality,
+            source_common_columns=dataset.source_common_columns,
+            source_exclusive_columns=dataset.source_exclusive_columns,
+            target_markers=dataset.target_exclusive_columns,
+        )
+        model.save(output / model_name)
+        paired_curve[str(paired_count)] = {
+            "paired_specimens": list(paired_specimens),
+            "teacher_blocks": teacher_blocks,
+            "methods": methods,
+            "model": str(output / model_name),
+            "elapsed_seconds": time.time() - point_started,
+        }
+        if device == "cuda":
+            torch.cuda.empty_cache()
+
     result = {
         "status": "ok",
         "experiment": config["experiment"]["name"],
         "fold": fold_index,
         "seed": seed,
+        "hardware": hardware,
         "direction": f"{dataset.source_modality}_to_{dataset.target_modality}",
         "markers": {
             "common": list(dataset.common_markers),
@@ -453,11 +542,19 @@ def run_experiment(config: dict) -> dict:
             "validation_specimens": len(validation_specimens),
             "test_specimens": len(test_specimens),
         },
-        "teacher_blocks": teacher["n_blocks"],
-        "methods": methods,
-        "model": str(output / "model.pkl"),
+        "shared_methods": shared_methods,
+        "paired_curve": paired_curve,
         "elapsed_seconds": time.time() - started,
     }
+    if not curve_mode:
+        point = paired_curve[str(paired_counts[0])]
+        result.update(
+            {
+                "teacher_blocks": point["teacher_blocks"],
+                "methods": point["methods"],
+                "model": point["model"],
+            }
+        )
     (output / "metrics.json").write_text(
         json.dumps(result, indent=2, sort_keys=True) + "\n"
     )

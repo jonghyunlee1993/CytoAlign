@@ -1,0 +1,10 @@
+extends: ../base.yaml
+
+experiment:
+  name: sf_to_cytof_paired_curve
+  fold: 0
+  paired_counts: [0, 1, 2, 4, 8, 16, 32]
+
+data:
+  source_modality: spectral_flow
+  target_modality: cytof

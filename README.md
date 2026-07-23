@@ -73,3 +73,23 @@ python -m src.wrappers.summarize --experiment sf_to_cytof
 The summary reports whether CytoAlign beats Ridge, kNN, direct MLP, and the
 H-only OT distiller on mean test population Wasserstein, and whether source
 exclusive markers add value over the `ot_hl` control.
+
+## Paired-specimen curve
+
+Fold 0 can evaluate nested paired training sets of size
+`0, 1, 2, 4, 8, 16, 32` while fitting the baselines only once per seed:
+
+```bash
+QUEUE=dbeigpu \
+GPU_REQUEST='num=1:mig=1/1:mode=shared' \
+FOLDS=0 \
+SEEDS='4207 4208 4209' \
+scripts/submit_train.sh configs/experiments/sf_to_cytof_paired_curve.yaml
+```
+
+Aggregate the three seeds with:
+
+```bash
+python -m src.wrappers.summarize_paired_curve \
+  --experiment sf_to_cytof_paired_curve
+```

@@ -63,13 +63,20 @@ class MLPRegressor:
 
         rng = np.random.RandomState(self.random_state)
         unique_groups = np.unique(group_values)
-        validation_count = max(1, int(round(0.1 * unique_groups.size)))
-        validation_groups = set(
-            rng.permutation(unique_groups)[:validation_count].tolist()
-        )
-        validation = np.asarray(
-            [group in validation_groups for group in group_values], dtype=bool
-        )
+        if unique_groups.size > 1:
+            validation_count = min(
+                unique_groups.size - 1,
+                max(1, int(round(0.1 * unique_groups.size))),
+            )
+            validation_groups = set(
+                rng.permutation(unique_groups)[:validation_count].tolist()
+            )
+            validation = np.asarray(
+                [group in validation_groups for group in group_values], dtype=bool
+            )
+        else:
+            validation = np.zeros(len(x), dtype=bool)
+            validation[rng.permutation(len(x))[: max(1, round(0.1 * len(x)))]] = True
         training = ~validation
 
         generator = torch.Generator().manual_seed(self.random_state)
