@@ -160,6 +160,7 @@ def summarize_paired_curve(path: str | Path) -> dict:
         "n_seeds": len(runs),
         "residual_baseline": runs[0].get("residual_baseline", "ridge_hl"),
         "pairing": runs[0].get("pairing", "matched"),
+        "selection_pairing": runs[0].get("selection_pairing", "matched"),
         "primary_method": primary_method,
         "paired_counts": counts,
         "paired_sets_are_nested": nested,

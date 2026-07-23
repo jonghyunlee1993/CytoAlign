@@ -6,3 +6,6 @@ experiment:
 training:
   ot:
     pairing: unpaired
+
+evaluation:
+  selection_pairing: unpaired

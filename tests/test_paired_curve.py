@@ -69,6 +69,7 @@ def test_paired_curve_summary_fits_improvement_trend(tmp_path):
     assert result["paired_sets_are_nested"]
     assert result["residual_baseline"] == "knn_hl"
     assert result["primary_method"] == "cytoalign_marker_gate"
+    assert result["selection_pairing"] == "matched"
     assert result["curve"]["1"]["active_marker_count"] == [2, 2]
     assert result["trend"]["raw_count_linear_fit"]["slope"] > 0
     assert result["first_count_showing_x_value"] == 1

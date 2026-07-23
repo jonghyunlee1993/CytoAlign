@@ -10,3 +10,4 @@ training:
 evaluation:
   marker_gate: true
   uncertainty_diagnostics: false
+  selection_pairing: matched

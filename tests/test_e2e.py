@@ -9,6 +9,28 @@ from src.models.cytoalign import CytoAlign
 from src.training import experiment
 
 
+def test_pooled_selection_discards_specimen_identity():
+    view = {
+        "source_h": {"B": np.asarray([[2.0]]), "A": np.asarray([[1.0]])},
+        "source_x": {"B": np.asarray([[4.0]]), "A": np.asarray([[3.0]])},
+        "source_labels": {"B": np.asarray(["T"]), "A": np.asarray(["B"])},
+        "target_y": {"B": np.asarray([[6.0]]), "A": np.asarray([[5.0]])},
+        "target_labels": {"B": np.asarray(["T"]), "A": np.asarray(["B"])},
+        "patients": {"A": "R1", "B": "R2"},
+    }
+
+    pooled = experiment._pooled_view(view)
+    predictions = experiment._pooled_predictions(
+        {"B": np.asarray([[8.0]]), "A": np.asarray([[7.0]])}
+    )
+
+    assert list(pooled["source_h"]) == ["pooled"]
+    assert pooled["source_h"]["pooled"].ravel().tolist() == [1.0, 2.0]
+    assert pooled["target_y"]["pooled"].ravel().tolist() == [5.0, 6.0]
+    assert pooled["patients"] == {"pooled": "pooled"}
+    assert predictions["pooled"].ravel().tolist() == [7.0, 8.0]
+
+
 def _specimen(specimen_id, source, rng):
     labels = np.repeat(COARSE_CELL_TYPES, 8)
     h = rng.normal(size=(len(labels), 2))
@@ -104,6 +126,7 @@ def test_end_to_end_training_writes_model_and_metrics(
     assert (output / "metrics.json").exists()
     assert result["residual_baseline"] == residual_baseline
     assert result["pairing"] == "matched"
+    assert result["selection_pairing"] == "matched"
     model = CytoAlign.load(result["model"])
     source = dataset.source[specimens[-1]]
     prediction = model.predict(

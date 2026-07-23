@@ -204,6 +204,27 @@ def _split_view(
     }
 
 
+def _pooled_view(view: dict) -> dict:
+    specimens = sorted(view["source_h"])
+    key = "pooled"
+    return {
+        "source_h": {key: np.concatenate([view["source_h"][s] for s in specimens])},
+        "source_x": {key: np.concatenate([view["source_x"][s] for s in specimens])},
+        "source_labels": {
+            key: np.concatenate([view["source_labels"][s] for s in specimens])
+        },
+        "target_y": {key: np.concatenate([view["target_y"][s] for s in specimens])},
+        "target_labels": {
+            key: np.concatenate([view["target_labels"][s] for s in specimens])
+        },
+        "patients": {key: key},
+    }
+
+
+def _pooled_predictions(predictions: Mapping[str, np.ndarray]) -> dict[str, np.ndarray]:
+    return {"pooled": np.concatenate([predictions[key] for key in sorted(predictions)])}
+
+
 def _evaluate(
     predictions: Mapping[str, np.ndarray], view: dict, scales: np.ndarray
 ) -> dict:
@@ -514,6 +535,11 @@ def run_experiment(config: dict) -> dict:
     paired_counts = tuple(map(int, paired_counts))
     alphas = tuple(map(float, config["evaluation"]["alphas"]))
     pairing = str(config["training"]["ot"].get("pairing", "matched"))
+    selection_pairing = str(
+        config["evaluation"].get("selection_pairing", "matched")
+    )
+    if selection_pairing not in {"matched", "unpaired"}:
+        raise ValueError("selection_pairing must be 'matched' or 'unpaired'")
     marker_gate_enabled = bool(config["evaluation"].get("marker_gate", False))
     paired_curve = {}
     for paired_count in paired_counts:
@@ -584,17 +610,27 @@ def run_experiment(config: dict) -> dict:
                 proposed, validation, classes, device, True
             )
             test_proposed = _mlp_predictions(proposed, test, classes, device, True)
+            if selection_pairing == "unpaired":
+                selection_view = _pooled_view(validation)
+                selection_baseline = _pooled_predictions(validation_baseline)
+                selection_ot_hl = _pooled_predictions(validation_ot_hl)
+                selection_proposed = _pooled_predictions(validation_proposed)
+            else:
+                selection_view = validation
+                selection_baseline = validation_baseline
+                selection_ot_hl = validation_ot_hl
+                selection_proposed = validation_proposed
             ot_hl_alpha, ot_hl_curve = _select_alpha(
-                validation_baseline,
-                validation_ot_hl,
-                validation,
+                selection_baseline,
+                selection_ot_hl,
+                selection_view,
                 scales,
                 alphas,
             )
             proposed_alpha, proposed_curve = _select_alpha(
-                validation_baseline,
-                validation_proposed,
-                validation,
+                selection_baseline,
+                selection_proposed,
+                selection_view,
                 scales,
                 alphas,
             )
@@ -610,9 +646,9 @@ def run_experiment(config: dict) -> dict:
             )
             if marker_gate_enabled:
                 marker_alphas, marker_curves = _select_marker_alphas(
-                    validation_baseline,
-                    validation_proposed,
-                    validation,
+                    selection_baseline,
+                    selection_proposed,
+                    selection_view,
                     scales,
                     alphas,
                 )
@@ -698,6 +734,7 @@ def run_experiment(config: dict) -> dict:
         "seed": seed,
         "residual_baseline": residual_baseline_name,
         "pairing": pairing,
+        "selection_pairing": selection_pairing,
         "hardware": hardware,
         "direction": f"{dataset.source_modality}_to_{dataset.target_modality}",
         "markers": {
