@@ -38,6 +38,8 @@ def test_cell_type_condition_improves_ambiguous_common_space():
     assert conditional_error < plain_error
     assert not diagnostics.used_fallback.any()
     assert np.all(diagnostics.effective_k == 10)
+    assert diagnostics.median_neighbor_mad.shape == truth.shape
+    assert np.all(diagnostics.median_neighbor_mad == 0)
 
 
 def test_unknown_query_type_uses_explicit_global_fallback():

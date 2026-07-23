@@ -103,6 +103,7 @@ def test_end_to_end_training_writes_model_and_metrics(
     assert (output / "model.pkl").exists()
     assert (output / "metrics.json").exists()
     assert result["residual_baseline"] == residual_baseline
+    assert result["pairing"] == "matched"
     model = CytoAlign.load(result["model"])
     source = dataset.source[specimens[-1]]
     prediction = model.predict(

@@ -52,6 +52,7 @@ def patient_balanced_indices(
 @dataclass(frozen=True)
 class CyTOFMergeDiagnostics:
     mean_neighbor_distance: np.ndarray
+    median_neighbor_mad: np.ndarray
     effective_k: np.ndarray
     used_fallback: np.ndarray
 
@@ -153,19 +154,25 @@ class CyTOFMergeRegressor:
 
     def _predict_bank(
         self, bank: _ReferenceBank, query: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         prediction = np.empty(
             (query.shape[0], self.n_target_markers_), dtype=np.float32
         )
         mean_distance = np.empty(query.shape[0], dtype=np.float32)
+        median_mad = np.empty_like(prediction)
         effective_k = np.empty(query.shape[0], dtype=np.int32)
         for left in range(0, query.shape[0], self.query_chunk_size):
             right = min(query.shape[0], left + self.query_chunk_size)
             distances, neighbors = bank.index.kneighbors(query[left:right])
-            prediction[left:right] = np.median(bank.target[neighbors], axis=1)
+            neighbor_targets = bank.target[neighbors]
+            current_prediction = np.median(neighbor_targets, axis=1)
+            prediction[left:right] = current_prediction
+            median_mad[left:right] = np.median(
+                np.abs(neighbor_targets - current_prediction[:, None, :]), axis=1
+            )
             mean_distance[left:right] = distances.mean(axis=1)
             effective_k[left:right] = neighbors.shape[1]
-        return prediction, mean_distance, effective_k
+        return prediction, mean_distance, median_mad, effective_k
 
     def predict(
         self,
@@ -182,7 +189,7 @@ class CyTOFMergeRegressor:
         if not np.isfinite(query).all():
             raise ValueError("query_common contains non-finite values")
         if not self.condition_on_cell_type:
-            prediction, distance, effective_k = self._predict_bank(
+            prediction, distance, median_mad, effective_k = self._predict_bank(
                 self.global_bank_, query
             )
             fallback = np.zeros(query.shape[0], dtype=bool)
@@ -196,6 +203,7 @@ class CyTOFMergeRegressor:
                 (query.shape[0], self.n_target_markers_), dtype=np.float32
             )
             distance = np.empty(query.shape[0], dtype=np.float32)
+            median_mad = np.empty_like(prediction)
             effective_k = np.empty(query.shape[0], dtype=np.int32)
             fallback = np.zeros(query.shape[0], dtype=bool)
             for label in np.unique(labels):
@@ -204,11 +212,17 @@ class CyTOFMergeRegressor:
                 if bank is None:
                     bank = self.global_bank_
                     fallback[rows] = True
-                current_prediction, current_distance, current_k = self._predict_bank(
-                    bank, query[rows]
-                )
+                (
+                    current_prediction,
+                    current_distance,
+                    current_mad,
+                    current_k,
+                ) = self._predict_bank(bank, query[rows])
                 prediction[rows] = current_prediction
                 distance[rows] = current_distance
+                median_mad[rows] = current_mad
                 effective_k[rows] = current_k
-        diagnostics = CyTOFMergeDiagnostics(distance, effective_k, fallback)
+        diagnostics = CyTOFMergeDiagnostics(
+            distance, median_mad, effective_k, fallback
+        )
         return (prediction, diagnostics) if return_diagnostics else prediction

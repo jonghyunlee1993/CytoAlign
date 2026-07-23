@@ -16,6 +16,7 @@ from src.data.aml import COARSE_CELL_TYPES
 from src.data.cross_panel import CrossPanelDataset, load_cross_panel_dataset
 from src.data.splits import patient_id_from_specimen
 from src.evaluation.population_metrics import evaluate_matched_populations
+from src.evaluation.uncertainty import evaluate_uncertainty
 from src.matching.optimal_transport import (
     balanced_sinkhorn,
     barycentric_projection,
@@ -93,6 +94,7 @@ def _fit_common_space(
 def _teacher(
     dataset: CrossPanelDataset,
     specimens: Sequence[str],
+    target_specimens: Sequence[str],
     common_space: CrossPanelCommonSpace,
     *,
     k_max: int,
@@ -101,6 +103,7 @@ def _teacher(
     sinkhorn_iterations: int,
     seed: int,
     device: str,
+    pooled_targets: bool = False,
 ) -> dict:
     import torch
 
@@ -108,11 +111,26 @@ def _teacher(
     rng = np.random.RandomState(seed)
     common, exclusive, targets, labels, groups = [], [], [], [], []
     block_count = 0
-    for specimen in specimens:
+    if pooled_targets:
+        pooled_target_values = np.concatenate(
+            [dataset.target[specimen].values for specimen in target_specimens]
+        )
+        pooled_target_labels = np.concatenate(
+            [
+                dataset.target[specimen].cell_types.astype(str)
+                for specimen in target_specimens
+            ]
+        )
+    for specimen, target_specimen in zip(specimens, target_specimens):
         source = dataset.source[specimen]
-        target = dataset.target[specimen]
         source_labels = source.cell_types.astype(str)
-        target_labels = target.cell_types.astype(str)
+        if pooled_targets:
+            target_values = pooled_target_values
+            target_labels = pooled_target_labels
+        else:
+            target = dataset.target[target_specimen]
+            target_values = target.values
+            target_labels = target.cell_types.astype(str)
         for cell_type in sorted(set(source_labels) & set(target_labels)):
             source_rows = np.flatnonzero(source_labels == cell_type)
             target_rows = np.flatnonzero(target_labels == cell_type)
@@ -125,7 +143,7 @@ def _teacher(
                 source.values[source_rows, :n_common]
             )
             target_h = common_space.target_percentiles(
-                target.values[target_rows, :n_common]
+                target_values[target_rows, :n_common]
             )
             source_tensor = torch.as_tensor(source_h, device=device)
             target_tensor = torch.as_tensor(target_h, device=device)
@@ -138,7 +156,7 @@ def _teacher(
                 iterations=sinkhorn_iterations,
             )
             target_y = torch.as_tensor(
-                target.values[target_rows, n_common:], device=device
+                target_values[target_rows, n_common:], device=device
             )
             common.append(source_h)
             exclusive.append(source.values[source_rows, n_common:])
@@ -210,6 +228,18 @@ def _baseline_predictions(model, view: dict) -> dict[str, np.ndarray]:
     }
 
 
+def _knn_predictions_with_diagnostics(model, view: dict):
+    predictions = {}
+    diagnostics = {}
+    for specimen in view["source_h"]:
+        predictions[specimen], diagnostics[specimen] = model.predict(
+            view["source_h"][specimen],
+            cell_types=view["source_labels"][specimen],
+            return_diagnostics=True,
+        )
+    return predictions, diagnostics
+
+
 def _mlp_predictions(model: MLPRegressor, view: dict, classes, device, use_x: bool):
     return {
         specimen: model.predict(
@@ -227,6 +257,48 @@ def _mlp_predictions(model: MLPRegressor, view: dict, classes, device, use_x: bo
 
 def _add(left: Mapping[str, np.ndarray], right: Mapping[str, np.ndarray], alpha: float):
     return {key: left[key] + alpha * right[key] for key in left}
+
+
+def _marker_add(
+    left: Mapping[str, np.ndarray],
+    right: Mapping[str, np.ndarray],
+    alphas: Sequence[float],
+):
+    scale = np.asarray(alphas, dtype=float)[None, :]
+    return {key: left[key] + scale * right[key] for key in left}
+
+
+def _marker_score(baseline, residual, view, scales, marker: int, alpha: float) -> float:
+    marker_view = {
+        **view,
+        "target_y": {
+            specimen: values[:, marker : marker + 1]
+            for specimen, values in view["target_y"].items()
+        },
+    }
+    marker_predictions = {
+        specimen: baseline[specimen][:, marker : marker + 1]
+        + alpha * residual[specimen][:, marker : marker + 1]
+        for specimen in baseline
+    }
+    return _evaluate(marker_predictions, marker_view, scales[marker : marker + 1])[
+        "patient_first_normalized_wasserstein"
+    ]
+
+
+def _select_marker_alphas(baseline, residual, view, scales, alphas):
+    selected = []
+    curves = []
+    for marker in range(scales.size):
+        curve = {
+            str(alpha): _marker_score(
+                baseline, residual, view, scales, marker, alpha
+            )
+            for alpha in alphas
+        }
+        selected.append(min(alphas, key=lambda alpha: (curve[str(alpha)], alpha)))
+        curves.append(curve)
+    return np.asarray(selected, dtype=float), curves
 
 
 def _select_alpha(baseline, residual, view, scales, alphas):
@@ -255,6 +327,31 @@ def _paired_subset(specimens: Sequence[str], count: int, seed: int) -> tuple[str
     ordered = np.asarray(sorted(specimens), dtype=object)
     permutation = np.random.RandomState(seed).permutation(ordered)
     return tuple(map(str, permutation[: int(count)]))
+
+
+def _paired_targets(
+    specimens: Sequence[str], pairing: str, seed: int
+) -> tuple[str, ...]:
+    source = np.asarray(tuple(map(str, specimens)), dtype=object)
+    if source.size == 0:
+        return ()
+    if pairing == "matched":
+        return tuple(map(str, source))
+    if pairing == "unpaired":
+        return tuple(map(str, source))
+    if pairing != "shuffled":
+        raise ValueError("OT pairing must be 'matched', 'shuffled', or 'unpaired'")
+    if np.unique([patient_id_from_specimen(value) for value in source]).size < 2:
+        raise ValueError("Shuffled pairing requires at least two patients")
+    rng = np.random.RandomState(seed)
+    for _ in range(10_000):
+        target = rng.permutation(source)
+        if all(
+            patient_id_from_specimen(left) != patient_id_from_specimen(right)
+            for left, right in zip(source, target)
+        ):
+            return tuple(map(str, target))
+    raise RuntimeError("Could not construct a patient-disjoint shuffled pairing")
 
 
 def run_experiment(config: dict) -> dict:
@@ -353,12 +450,21 @@ def run_experiment(config: dict) -> dict:
 
     validation = _split_view(dataset, validation_specimens, common_space)
     test = _split_view(dataset, test_specimens, common_space)
+    diagnostics_enabled = bool(
+        config["evaluation"].get("uncertainty_diagnostics", False)
+    )
+    test_knn_diagnostics = None
+    validation_knn = _baseline_predictions(knn, validation)
+    if diagnostics_enabled:
+        test_knn, test_knn_diagnostics = _knn_predictions_with_diagnostics(knn, test)
+    else:
+        test_knn = _baseline_predictions(knn, test)
     baseline_predictions = {
-        name: (
-            _baseline_predictions(model, validation),
-            _baseline_predictions(model, test),
-        )
-        for name, model in baselines.items()
+        "ridge_hl": (
+            _baseline_predictions(ridge, validation),
+            _baseline_predictions(ridge, test),
+        ),
+        "knn_hl": (validation_knn, test_knn),
     }
     validation_baseline, test_baseline = baseline_predictions[residual_baseline_name]
 
@@ -407,10 +513,13 @@ def run_experiment(config: dict) -> dict:
         paired_counts = [len(train_specimens)]
     paired_counts = tuple(map(int, paired_counts))
     alphas = tuple(map(float, config["evaluation"]["alphas"]))
+    pairing = str(config["training"]["ot"].get("pairing", "matched"))
+    marker_gate_enabled = bool(config["evaluation"].get("marker_gate", False))
     paired_curve = {}
     for paired_count in paired_counts:
         point_started = time.time()
         paired_specimens = _paired_subset(train_specimens, paired_count, seed + 19)
+        paired_targets = _paired_targets(paired_specimens, pairing, seed + 21)
         if paired_count == 0:
             teacher_blocks = 0
             proposed = None
@@ -425,10 +534,15 @@ def run_experiment(config: dict) -> dict:
             test_ot_prediction = test_baseline
             validation_proposed_prediction = validation_baseline
             test_proposed_prediction = test_baseline
+            marker_alphas = np.zeros(scales.size)
+            marker_curves = []
+            test_marker_prediction = test_baseline
+            uncertainty = None
         else:
             teacher = _teacher(
                 dataset,
                 paired_specimens,
+                paired_targets,
                 common_space,
                 k_max=int(config["training"]["ot"]["k_max"]),
                 k_min=int(config["training"]["ot"]["k_min"]),
@@ -438,6 +552,7 @@ def run_experiment(config: dict) -> dict:
                 ),
                 seed=seed + 20,
                 device=device,
+                pooled_targets=pairing == "unpaired",
             )
             teacher_blocks = teacher["n_blocks"]
             teacher_baseline = baseline.predict(
@@ -493,6 +608,37 @@ def run_experiment(config: dict) -> dict:
             test_proposed_prediction = _add(
                 test_baseline, test_proposed, proposed_alpha
             )
+            if marker_gate_enabled:
+                marker_alphas, marker_curves = _select_marker_alphas(
+                    validation_baseline,
+                    validation_proposed,
+                    validation,
+                    scales,
+                    alphas,
+                )
+                test_marker_prediction = _marker_add(
+                    test_baseline, test_proposed, marker_alphas
+                )
+            else:
+                marker_alphas = np.repeat(proposed_alpha, scales.size)
+                marker_curves = []
+                test_marker_prediction = test_proposed_prediction
+            uncertainty = None
+            if diagnostics_enabled:
+                if residual_baseline_name != "knn_hl":
+                    raise ValueError(
+                        "Uncertainty diagnostics require residual_baseline=knn_hl"
+                    )
+                uncertainty = evaluate_uncertainty(
+                    test_baseline,
+                    test_proposed,
+                    test_knn_diagnostics,
+                    test,
+                    scales,
+                    alphas,
+                    proposed_alpha,
+                    dataset.target_exclusive_columns,
+                )
 
         methods = dict(shared_methods)
         methods["ot_hl"] = {
@@ -507,6 +653,12 @@ def run_experiment(config: dict) -> dict:
             "validation": _evaluate(validation_proposed_prediction, validation, scales),
             "test": _evaluate(test_proposed_prediction, test, scales),
         }
+        if marker_gate_enabled:
+            methods["cytoalign_marker_gate"] = {
+                "selected_alphas": marker_alphas.tolist(),
+                "validation_alpha_curves": marker_curves,
+                "test": _evaluate(test_marker_prediction, test, scales),
+            }
         model_path = None
         if bool(config["output"].get("save_models", True)):
             model_name = (
@@ -528,8 +680,11 @@ def run_experiment(config: dict) -> dict:
             model_path = str(output / model_name)
         paired_curve[str(paired_count)] = {
             "paired_specimens": list(paired_specimens),
+            "paired_target_specimens": list(paired_targets),
+            "pairing": pairing,
             "teacher_blocks": teacher_blocks,
             "methods": methods,
+            "uncertainty": uncertainty,
             "model": model_path,
             "elapsed_seconds": time.time() - point_started,
         }
@@ -542,6 +697,7 @@ def run_experiment(config: dict) -> dict:
         "fold": fold_index,
         "seed": seed,
         "residual_baseline": residual_baseline_name,
+        "pairing": pairing,
         "hardware": hardware,
         "direction": f"{dataset.source_modality}_to_{dataset.target_modality}",
         "markers": {

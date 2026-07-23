@@ -1,0 +1,8 @@
+extends: sf_to_cytof_go_nogo_matched.yaml
+
+experiment:
+  name: sf_to_cytof_go_nogo_shuffled
+
+training:
+  ot:
+    pairing: shuffled

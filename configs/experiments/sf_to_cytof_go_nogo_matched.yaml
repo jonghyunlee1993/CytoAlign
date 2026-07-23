@@ -1,0 +1,16 @@
+extends: sf_to_cytof_knn_residual_curve.yaml
+
+experiment:
+  name: sf_to_cytof_go_nogo_matched
+  paired_counts: [32]
+
+training:
+  ot:
+    pairing: matched
+
+evaluation:
+  uncertainty_diagnostics: true
+  marker_gate: true
+
+output:
+  save_models: false
