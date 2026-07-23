@@ -1,0 +1,41 @@
+# Local data and generated experiment state
+/data/
+/archive/
+/artifacts/
+/outputs/
+/logs/
+/log/
+
+# External baselines and local environments
+/baseline/
+.venv/
+venv/
+env/
+
+# Python and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# Training artifacts and scheduler logs
+*.ckpt
+*.pt
+*.pth
+*.out
+*.err
+lsf.*
+
+# Local editor and OS state
+.DS_Store
+.idea/
+.vscode/
+
+# Reference papers are local inputs, not project source
+/docs/*.pdf
