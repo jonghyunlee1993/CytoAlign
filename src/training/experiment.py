@@ -319,7 +319,7 @@ def run_experiment(config: dict) -> dict:
     scales = _marker_scale(target_y)
     classes = tuple(COARSE_CELL_TYPES)
 
-    baseline = HOnlyRegressor(condition_on_cell_type=True).fit(
+    ridge = HOnlyRegressor(condition_on_cell_type=True).fit(
         target_h, target_y, cell_types=target_labels
     )
     direct_features = encode_features(target_h, None, target_labels, classes)
@@ -340,11 +340,27 @@ def run_experiment(config: dict) -> dict:
         reference_cell_types=target_labels,
         reference_groups=target_groups,
     )
+    residual_baseline_name = str(
+        config["training"].get("residual_baseline", "ridge_hl")
+    )
+    baselines = {"ridge_hl": ridge, "knn_hl": knn}
+    if residual_baseline_name not in baselines:
+        raise ValueError(
+            f"Unknown residual baseline {residual_baseline_name!r}; "
+            f"choose one of {tuple(baselines)}"
+        )
+    baseline = baselines[residual_baseline_name]
 
     validation = _split_view(dataset, validation_specimens, common_space)
     test = _split_view(dataset, test_specimens, common_space)
-    validation_baseline = _baseline_predictions(baseline, validation)
-    test_baseline = _baseline_predictions(baseline, test)
+    baseline_predictions = {
+        name: (
+            _baseline_predictions(model, validation),
+            _baseline_predictions(model, test),
+        )
+        for name, model in baselines.items()
+    }
+    validation_baseline, test_baseline = baseline_predictions[residual_baseline_name]
 
     def median_predictions(model, view):
         return {
@@ -358,15 +374,6 @@ def run_experiment(config: dict) -> dict:
             for specimen in view["source_h"]
         }
 
-    def knn_predictions(view):
-        return {
-            specimen: knn.predict(
-                view["source_h"][specimen],
-                query_cell_types=view["source_labels"][specimen],
-            )
-            for specimen in view["source_h"]
-        }
-
     validation_direct = _mlp_predictions(direct_mlp, validation, classes, device, False)
     test_direct = _mlp_predictions(direct_mlp, test, classes, device, False)
     shared_predictions = {
@@ -375,8 +382,7 @@ def run_experiment(config: dict) -> dict:
             median_predictions(type_median, validation),
             median_predictions(type_median, test),
         ),
-        "ridge_hl": (validation_baseline, test_baseline),
-        "knn_hl": (knn_predictions(validation), knn_predictions(test)),
+        **baseline_predictions,
         "mlp_hl": (validation_direct, test_direct),
     }
     shared_methods = {
@@ -410,7 +416,7 @@ def run_experiment(config: dict) -> dict:
             proposed = None
             ot_hl_alpha = proposed_alpha = 0.0
             ot_hl_curve = proposed_curve = {
-                str(alpha): shared_methods["ridge_hl"]["validation"][
+                str(alpha): shared_methods[residual_baseline_name]["validation"][
                     "patient_first_normalized_wasserstein"
                 ]
                 for alpha in alphas
@@ -501,25 +507,30 @@ def run_experiment(config: dict) -> dict:
             "validation": _evaluate(validation_proposed_prediction, validation, scales),
             "test": _evaluate(test_proposed_prediction, test, scales),
         }
-        model_name = f"model_paired_{paired_count}.pkl" if curve_mode else "model.pkl"
-        model = CytoAlign(
-            common_space=common_space,
-            baseline=baseline,
-            residual=proposed,
-            classes=classes,
-            alpha=proposed_alpha,
-            source_modality=dataset.source_modality,
-            target_modality=dataset.target_modality,
-            source_common_columns=dataset.source_common_columns,
-            source_exclusive_columns=dataset.source_exclusive_columns,
-            target_markers=dataset.target_exclusive_columns,
-        )
-        model.save(output / model_name)
+        model_path = None
+        if bool(config["output"].get("save_models", True)):
+            model_name = (
+                f"model_paired_{paired_count}.pkl" if curve_mode else "model.pkl"
+            )
+            model = CytoAlign(
+                common_space=common_space,
+                baseline=baseline,
+                residual=proposed,
+                classes=classes,
+                alpha=proposed_alpha,
+                source_modality=dataset.source_modality,
+                target_modality=dataset.target_modality,
+                source_common_columns=dataset.source_common_columns,
+                source_exclusive_columns=dataset.source_exclusive_columns,
+                target_markers=dataset.target_exclusive_columns,
+            )
+            model.save(output / model_name)
+            model_path = str(output / model_name)
         paired_curve[str(paired_count)] = {
             "paired_specimens": list(paired_specimens),
             "teacher_blocks": teacher_blocks,
             "methods": methods,
-            "model": str(output / model_name),
+            "model": model_path,
             "elapsed_seconds": time.time() - point_started,
         }
         if device == "cuda":
@@ -530,6 +541,7 @@ def run_experiment(config: dict) -> dict:
         "experiment": config["experiment"]["name"],
         "fold": fold_index,
         "seed": seed,
+        "residual_baseline": residual_baseline_name,
         "hardware": hardware,
         "direction": f"{dataset.source_modality}_to_{dataset.target_modality}",
         "markers": {

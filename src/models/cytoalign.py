@@ -8,6 +8,7 @@ from typing import Sequence
 
 import numpy as np
 
+from src.models.cytofmerge import CyTOFMergeRegressor
 from src.models.h_only import HOnlyRegressor
 from src.models.mlp import MLPRegressor
 from src.preprocessing.common_space import CrossPanelCommonSpace
@@ -36,7 +37,7 @@ class CytoAlign:
         self,
         *,
         common_space: CrossPanelCommonSpace,
-        baseline: HOnlyRegressor,
+        baseline: HOnlyRegressor | CyTOFMergeRegressor,
         residual: MLPRegressor | None,
         classes: Sequence[str],
         alpha: float,

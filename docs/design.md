@@ -34,6 +34,16 @@ type `L`. It does not use target cells or optimal transport.
 
 The `ot_hl` comparison isolates whether source-exclusive markers add value.
 
+The residual baseline is configurable. The kNN-residual experiment replaces
+`b(H,L)` with the cell-type-conditioned kNN median while leaving the OT teacher,
+paired subsets, residual networks, and validation-selected scale unchanged:
+
+`kNN(H,L) + alpha * r(H,X,L)`
+
+Its count-zero condition is exactly plain kNN. Comparing the `H+L` and `H+X+L`
+residuals tests whether specimen pairing and source-exclusive markers improve
+on the strongest direct baseline.
+
 ## Paired-specimen dose response
 
 For fold 0, target-training data, preprocessing, validation/test specimens, and

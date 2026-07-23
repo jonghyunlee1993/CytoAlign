@@ -171,7 +171,7 @@ class CyTOFMergeRegressor:
         self,
         query_common: np.ndarray,
         *,
-        query_cell_types: Sequence | None = None,
+        cell_types: Sequence | None = None,
         return_diagnostics: bool = False,
     ) -> np.ndarray | tuple[np.ndarray, CyTOFMergeDiagnostics]:
         if not hasattr(self, "global_bank_"):
@@ -187,13 +187,11 @@ class CyTOFMergeRegressor:
             )
             fallback = np.zeros(query.shape[0], dtype=bool)
         else:
-            if query_cell_types is None:
-                raise ValueError(
-                    "query_cell_types are required when conditioning is enabled"
-                )
-            labels = np.asarray(query_cell_types)
+            if cell_types is None:
+                raise ValueError("cell_types are required when conditioning is enabled")
+            labels = np.asarray(cell_types)
             if labels.ndim != 1 or labels.size != query.shape[0]:
-                raise ValueError("query_cell_types do not align with query rows")
+                raise ValueError("cell_types do not align with query rows")
             prediction = np.empty(
                 (query.shape[0], self.n_target_markers_), dtype=np.float32
             )

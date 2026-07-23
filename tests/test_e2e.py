@@ -30,7 +30,10 @@ def _specimen(specimen_id, source, rng):
     )
 
 
-def test_end_to_end_training_writes_model_and_metrics(tmp_path, monkeypatch):
+@pytest.mark.parametrize("residual_baseline", ["ridge_hl", "knn_hl"])
+def test_end_to_end_training_writes_model_and_metrics(
+    tmp_path, monkeypatch, residual_baseline
+):
     rng = np.random.RandomState(3)
     specimens = [f"R{index:04d}_A" for index in range(5)]
     dataset = CrossPanelDataset(
@@ -55,12 +58,17 @@ def test_end_to_end_training_writes_model_and_metrics(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(experiment, "load_cross_panel_dataset", lambda _: dataset)
     config = {
-        "experiment": {"name": "test", "fold": 0, "seed": 7},
+        "experiment": {
+            "name": f"test_{residual_baseline}",
+            "fold": 0,
+            "seed": 7,
+        },
         "data": {},
         "preprocessing": {"n_knots": 17, "max_fit_cells": 1000},
         "training": {
             "device": "cpu",
             "max_fit_cells": 1000,
+            "residual_baseline": residual_baseline,
             "ot": {
                 "k_max": 6,
                 "k_min": 4,
@@ -91,8 +99,10 @@ def test_end_to_end_training_writes_model_and_metrics(tmp_path, monkeypatch):
         "ot_hl",
         "cytoalign",
     }
-    assert (tmp_path / "test" / "fold_0" / "seed_7" / "model.pkl").exists()
-    assert (tmp_path / "test" / "fold_0" / "seed_7" / "metrics.json").exists()
+    output = tmp_path / f"test_{residual_baseline}" / "fold_0" / "seed_7"
+    assert (output / "model.pkl").exists()
+    assert (output / "metrics.json").exists()
+    assert result["residual_baseline"] == residual_baseline
     model = CytoAlign.load(result["model"])
     source = dataset.source[specimens[-1]]
     prediction = model.predict(

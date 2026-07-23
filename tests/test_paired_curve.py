@@ -40,11 +40,18 @@ def test_paired_curve_summary_fits_improvement_trend(tmp_path):
                 "methods": methods,
             }
         (run / "metrics.json").write_text(
-            json.dumps({"shared_methods": shared, "paired_curve": curve})
+            json.dumps(
+                {
+                    "residual_baseline": "knn_hl",
+                    "shared_methods": shared,
+                    "paired_curve": curve,
+                }
+            )
         )
 
     result = summarize_paired_curve(root)
 
     assert result["paired_sets_are_nested"]
+    assert result["residual_baseline"] == "knn_hl"
     assert result["trend"]["raw_count_linear_fit"]["slope"] > 0
     assert result["first_count_showing_x_value"] == 1

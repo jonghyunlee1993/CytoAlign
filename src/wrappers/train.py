@@ -35,6 +35,7 @@ def main() -> None:
         "experiment": result["experiment"],
         "fold": result["fold"],
         "seed": result["seed"],
+        "residual_baseline": result["residual_baseline"],
     }
     if "methods" in result:
         summary["model"] = result["model"]

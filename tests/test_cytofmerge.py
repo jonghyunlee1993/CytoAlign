@@ -31,7 +31,7 @@ def test_cell_type_condition_improves_ambiguous_common_space():
     )
     plain_error = np.mean(np.abs(plain.predict(query_common) - truth))
     conditional_prediction, diagnostics = conditional.predict(
-        query_common, query_cell_types=query_labels, return_diagnostics=True
+        query_common, cell_types=query_labels, return_diagnostics=True
     )
     conditional_error = np.mean(np.abs(conditional_prediction - truth))
     assert conditional_error == 0.0
@@ -48,7 +48,7 @@ def test_unknown_query_type_uses_explicit_global_fallback():
         k=2, condition_on_cell_type=True, max_reference_cells=None
     ).fit(common, target, reference_cell_types=labels)
     prediction, diagnostics = model.predict(
-        [[1.5]], query_cell_types=["unknown"], return_diagnostics=True
+        [[1.5]], cell_types=["unknown"], return_diagnostics=True
     )
     assert prediction.shape == (1, 1)
     assert diagnostics.used_fallback.tolist() == [True]

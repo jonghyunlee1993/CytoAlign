@@ -23,6 +23,7 @@ preprocessing:
 training:
   device: cuda
   max_fit_cells: 250000
+  residual_baseline: ridge_hl
   ot:
     k_max: 256
     k_min: 32
@@ -44,3 +45,4 @@ evaluation:
 
 output:
   root: outputs
+  save_models: true

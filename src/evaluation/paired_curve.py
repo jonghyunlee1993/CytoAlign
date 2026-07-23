@@ -114,6 +114,7 @@ def summarize_paired_curve(path: str | Path) -> dict:
         "experiment": root.name,
         "fold": 0,
         "n_seeds": len(runs),
+        "residual_baseline": runs[0].get("residual_baseline", "ridge_hl"),
         "paired_counts": counts,
         "paired_sets_are_nested": nested,
         "baselines": baselines,

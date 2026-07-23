@@ -93,3 +93,18 @@ Aggregate the three seeds with:
 python -m src.wrappers.summarize_paired_curve \
   --experiment sf_to_cytof_paired_curve
 ```
+
+To test source-exclusive residuals on top of the strongest `H+L` baseline,
+replace Ridge with kNN while keeping the same paired sets and controls:
+
+```bash
+QUEUE=dbeigpu \
+GPU_REQUEST='num=1:mig=1/1:mode=shared:gmodel=NVIDIAH200' \
+FOLDS=0 \
+SEEDS='4207 4208 4209' \
+scripts/submit_train.sh \
+  configs/experiments/sf_to_cytof_knn_residual_curve.yaml
+```
+
+Here count zero is exactly kNN `H+L`; `ot_hl` and `cytoalign` add validation-
+scaled OT residuals using `H+L` and `H+X+L`, respectively.
