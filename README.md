@@ -81,7 +81,7 @@ Fold 0 can evaluate nested paired training sets of size
 
 ```bash
 QUEUE=dbeigpu \
-GPU_REQUEST='num=1:mig=1/1:mode=shared' \
+GPU_REQUEST='num=1:mig=1/1:mode=shared:gmodel=NVIDIAH200' \
 FOLDS=0 \
 SEEDS='4207 4208 4209' \
 scripts/submit_train.sh configs/experiments/sf_to_cytof_paired_curve.yaml
