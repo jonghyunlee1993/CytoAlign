@@ -35,9 +35,7 @@ def _normalized_aliases(aliases: Mapping[str, str] | None) -> dict[str, str]:
     return {_token(key): str(value).strip() for key, value in aliases.items()}
 
 
-def canonical_marker_name(
-    name: str, aliases: Mapping[str, str] | None = None
-) -> str:
+def canonical_marker_name(name: str, aliases: Mapping[str, str] | None = None) -> str:
     """Return a deterministic comparison name for one marker column."""
     stripped = str(name).strip()
     return _normalized_aliases(aliases).get(_token(stripped), _token(stripped))
@@ -119,4 +117,3 @@ def build_pair_marker_manifest(
         target_primary_exclusive_columns=target_primary,
         target_technical_exclusive_columns=target_technical,
     )
-

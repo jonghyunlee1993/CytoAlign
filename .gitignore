@@ -23,6 +23,9 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 .hypothesis/
+.tox/
+.nox/
+/test-results/
 
 # Training artifacts and scheduler logs
 *.ckpt

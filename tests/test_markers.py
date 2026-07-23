@@ -92,8 +92,14 @@ def test_aml_marker_manifest_has_17_exact_and_19_canonical_shared_markers():
     assert len(canonical.common_markers) == 19
     assert "PD-1" in canonical.common_markers
     assert "CCR7" in canonical.common_markers
-    assert canonical.source_common_columns[canonical.common_markers.index("PD-1")] == "PD-1"
-    assert canonical.target_common_columns[canonical.common_markers.index("PD-1")] == "CD279"
+    assert (
+        canonical.source_common_columns[canonical.common_markers.index("PD-1")]
+        == "PD-1"
+    )
+    assert (
+        canonical.target_common_columns[canonical.common_markers.index("PD-1")]
+        == "CD279"
+    )
 
 
 def test_target_technical_channels_are_not_primary_endpoints():
@@ -112,4 +118,3 @@ def test_target_technical_channels_are_not_primary_endpoints():
 def test_alias_collision_is_rejected():
     with pytest.raises(ValueError, match="multiple columns"):
         build_pair_marker_manifest(["PD-1", "CD279"], ["PD-1"])
-

@@ -1,15 +1,15 @@
-"""Baseline prediction models."""
+"""CytoAlign and comparison models."""
 
-from .cell_type import CommonCellTypeClassifier
-from .cytofmerge import CyTOFMergeDiagnostics, CyTOFMergeRegressor
+from .cytoalign import CytoAlign
+from .cytofmerge import CyTOFMergeRegressor
 from .h_only import CellTypeMedianRegressor, GlobalMedianRegressor, HOnlyRegressor
+from .mlp import MLPRegressor
 
 __all__ = [
+    "CytoAlign",
     "CellTypeMedianRegressor",
-    "CommonCellTypeClassifier",
-    "CyTOFMergeDiagnostics",
     "CyTOFMergeRegressor",
     "GlobalMedianRegressor",
     "HOnlyRegressor",
+    "MLPRegressor",
 ]
-

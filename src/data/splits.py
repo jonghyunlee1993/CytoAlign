@@ -76,7 +76,9 @@ def build_patient_grouped_manifest(
 
     splitter = KFold(n_splits=int(n_splits), shuffle=True, random_state=int(seed))
     folds = []
-    for fold_index, (outer_train_index, test_index) in enumerate(splitter.split(patients)):
+    for fold_index, (outer_train_index, test_index) in enumerate(
+        splitter.split(patients)
+    ):
         outer_train = sorted(map(str, patients[outer_train_index]))
         test = sorted(map(str, patients[test_index]))
         training, validation = _inner_partition(
@@ -85,7 +87,9 @@ def build_patient_grouped_manifest(
 
         def specimens_for(groups: Sequence[str]) -> list[str]:
             return sorted(
-                specimen for patient in groups for specimen in patient_to_specimens[patient]
+                specimen
+                for patient in groups
+                for specimen in patient_to_specimens[patient]
             )
 
         folds.append(
@@ -177,4 +181,3 @@ def load_manifest(path: str | Path) -> dict:
         manifest = json.load(handle)
     validate_patient_grouped_manifest(manifest)
     return manifest
-

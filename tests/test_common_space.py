@@ -39,4 +39,3 @@ def test_cross_panel_mapping_uses_only_fitted_support():
 def test_cross_panel_dimension_mismatch_is_rejected():
     with pytest.raises(ValueError, match="dimensions differ"):
         CrossPanelCommonSpace.fit(np.ones((5, 2)), np.ones((5, 3)))
-

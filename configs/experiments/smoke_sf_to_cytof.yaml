@@ -1,0 +1,28 @@
+extends: sf_to_cytof.yaml
+
+experiment:
+  name: smoke_sf_to_cytof
+
+data:
+  sampling: head
+  max_cells_per_specimen: 200
+
+preprocessing:
+  max_fit_cells: 5000
+
+training:
+  device: cpu
+  max_fit_cells: 5000
+  ot:
+    k_max: 32
+    k_min: 8
+    sinkhorn_iterations: 50
+  mlp:
+    hidden_dims: [32]
+    epochs: 2
+    batch_size: 256
+    patience: 1
+  knn:
+    k: 10
+    max_reference_cells: 5000
+    n_jobs: 1

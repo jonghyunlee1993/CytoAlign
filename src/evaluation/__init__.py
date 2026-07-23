@@ -1,6 +1,6 @@
-"""Evaluation artifacts and patient-first metrics."""
+"""Cross-panel population evaluation."""
 
-from .predictions import PredictionBundle
+from .population_metrics import evaluate_matched_populations
+from .summary import summarize_experiment
 
-__all__ = ["PredictionBundle"]
-
+__all__ = ["evaluate_matched_populations", "summarize_experiment"]

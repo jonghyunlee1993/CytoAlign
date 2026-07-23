@@ -44,7 +44,10 @@ def evaluate_matched_populations(
             raise ValueError("Prediction and target populations must be matrices")
         if prediction.shape[1] != target.shape[1] or prediction.shape[1] != scales.size:
             raise ValueError("Population marker dimensions do not align")
-        if prediction.shape[0] != prediction_labels.size or target.shape[0] != target_labels.size:
+        if (
+            prediction.shape[0] != prediction_labels.size
+            or target.shape[0] != target_labels.size
+        ):
             raise ValueError("Population cell types do not align")
         common_types = sorted(set(prediction_labels) & set(target_labels))
         for label in common_types:
@@ -57,7 +60,9 @@ def evaluate_matched_populations(
             predicted_current = prediction[predicted_rows]
             target_current = target[target_rows]
             distances = [
-                wasserstein_distance(predicted_current[:, index], target_current[:, index])
+                wasserstein_distance(
+                    predicted_current[:, index], target_current[:, index]
+                )
                 / scales[index]
                 for index in range(scales.size)
             ]
@@ -73,7 +78,9 @@ def evaluate_matched_populations(
     if not n_strata:
         raise ValueError("No cell-type strata met minimum_cells")
 
-    def patient_first(values: Mapping[str, list[float]]) -> tuple[float, dict[str, float]]:
+    def patient_first(
+        values: Mapping[str, list[float]]
+    ) -> tuple[float, dict[str, float]]:
         patient_values: dict[str, list[float]] = defaultdict(list)
         for specimen, current in values.items():
             if current:
@@ -92,10 +99,15 @@ def evaluate_matched_populations(
     target_summary = np.stack(target_medians)
     marker_correlations = []
     for marker_index in range(scales.size):
-        correlation = spearmanr(
-            predicted_summary[:, marker_index], target_summary[:, marker_index]
-        ).statistic
-        marker_correlations.append(float(correlation) if np.isfinite(correlation) else None)
+        predicted_marker = predicted_summary[:, marker_index]
+        target_marker = target_summary[:, marker_index]
+        if np.ptp(predicted_marker) == 0 or np.ptp(target_marker) == 0:
+            correlation = np.nan
+        else:
+            correlation = spearmanr(predicted_marker, target_marker).statistic
+        marker_correlations.append(
+            float(correlation) if np.isfinite(correlation) else None
+        )
     finite = [value for value in marker_correlations if value is not None]
     return {
         "patient_first_normalized_wasserstein": wasserstein,

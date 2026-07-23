@@ -194,9 +194,9 @@ def load_specimen_reservoir(
         held_rows = np.concatenate([held_rows, current_rows])
         held_priorities = np.concatenate([held_priorities, current_priorities])
         if held_rows.size > int(maximum_cells):
-            selected = np.argpartition(
-                held_priorities, int(maximum_cells) - 1
-            )[: int(maximum_cells)]
+            selected = np.argpartition(held_priorities, int(maximum_cells) - 1)[
+                : int(maximum_cells)
+            ]
             held_values = held_values[selected]
             held_labels = held_labels[selected]
             held_rows = held_rows[selected]

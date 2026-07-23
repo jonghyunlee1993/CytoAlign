@@ -1,0 +1,8 @@
+extends: ../base.yaml
+
+experiment:
+  name: sf_to_cytof
+
+data:
+  source_modality: spectral_flow
+  target_modality: cytof

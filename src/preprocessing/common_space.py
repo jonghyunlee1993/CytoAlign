@@ -35,7 +35,9 @@ class EmpiricalPercentileTransformer:
             column = array[:, marker_index]
             column = column[np.isfinite(column)]
             if column.size < 2:
-                raise ValueError(f"Marker {marker_index} has fewer than two finite rows")
+                raise ValueError(
+                    f"Marker {marker_index} has fewer than two finite rows"
+                )
             quantiles = np.quantile(column, probabilities)
             unique, inverse = np.unique(quantiles, return_inverse=True)
             if unique.size == 1:
@@ -143,4 +145,3 @@ class CrossPanelCommonSpace:
 
     def source_to_target(self, values: np.ndarray) -> np.ndarray:
         return self.target.inverse_transform(self.source.transform(values))
-

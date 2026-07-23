@@ -63,4 +63,3 @@ def test_patient_balanced_reference_cap_is_deterministic_and_not_dominated():
     assert len(first) == 20
     assert np.sum(selected_groups == "small") == 10
     assert np.sum(selected_groups == "large") == 10
-

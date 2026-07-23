@@ -65,4 +65,3 @@ def test_exact_pair_discovery_requires_cells_and_labels_in_both_panels(tmp_path)
     assert discover_exact_specimen_pairs(tmp_path, "spectral_flow", "cytof") == (
         "R0001_A",
     )
-

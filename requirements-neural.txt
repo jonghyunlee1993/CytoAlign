@@ -1,4 +1,0 @@
-# Install the PyTorch build appropriate for the LPC CUDA runtime when training
-# on GPU.  The classical NumPy/scikit-learn baseline remains dependency-free
-# from this file.
-torch>=2.2,<3

@@ -118,15 +118,15 @@ class CyTOFMergeRegressor:
         common = _matrix(reference_common, "reference_common")
         target = _matrix(reference_target_exclusive, "reference_target_exclusive")
         if common.shape[0] != target.shape[0] or common.shape[0] == 0:
-            raise ValueError("Reference common and target rows must be equal and non-empty")
+            raise ValueError(
+                "Reference common and target rows must be equal and non-empty"
+            )
         if not np.isfinite(common).all():
             raise ValueError("reference_common contains non-finite values")
         groups = None if reference_groups is None else np.asarray(reference_groups)
         if groups is not None and (groups.ndim != 1 or groups.size != common.shape[0]):
             raise ValueError("reference_groups do not align with reference rows")
-        self.global_bank_ = self._bank(
-            common, target, groups, self.random_state
-        )
+        self.global_bank_ = self._bank(common, target, groups, self.random_state)
         self.type_banks_: dict[object, _ReferenceBank] = {}
         if self.condition_on_cell_type:
             if reference_cell_types is None:
@@ -135,7 +135,9 @@ class CyTOFMergeRegressor:
                 )
             labels = np.asarray(reference_cell_types)
             if labels.ndim != 1 or labels.size != common.shape[0]:
-                raise ValueError("reference_cell_types do not align with reference rows")
+                raise ValueError(
+                    "reference_cell_types do not align with reference rows"
+                )
             for label in np.unique(labels):
                 rows = labels == label
                 local_groups = None if groups is None else groups[rows]
@@ -152,7 +154,9 @@ class CyTOFMergeRegressor:
     def _predict_bank(
         self, bank: _ReferenceBank, query: np.ndarray
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        prediction = np.empty((query.shape[0], self.n_target_markers_), dtype=np.float32)
+        prediction = np.empty(
+            (query.shape[0], self.n_target_markers_), dtype=np.float32
+        )
         mean_distance = np.empty(query.shape[0], dtype=np.float32)
         effective_k = np.empty(query.shape[0], dtype=np.int32)
         for left in range(0, query.shape[0], self.query_chunk_size):
@@ -210,4 +214,3 @@ class CyTOFMergeRegressor:
                 effective_k[rows] = current_k
         diagnostics = CyTOFMergeDiagnostics(distance, effective_k, fallback)
         return (prediction, diagnostics) if return_diagnostics else prediction
-
