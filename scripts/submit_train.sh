@@ -11,7 +11,7 @@ test -f "$config"
 queue=${QUEUE:?set QUEUE after checking current LPC GPU inventory}
 gpu_request=${GPU_REQUEST:-num=1:mode=shared}
 cpu_cores=${CPU_CORES:-4}
-memory_mb=${MEMORY_MB:-32000}
+memory_mb=${MEMORY_MB:-12000}
 walltime=${WALLTIME:-24:00}
 python_bin=${PYTHON_BIN:-/project/kimlab_tcga/JH_workspace/conda_envs/cytometry/bin/python}
 folds=${FOLDS:-"0 1 2 3 4"}
