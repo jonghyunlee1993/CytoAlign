@@ -1,0 +1,8 @@
+extends: sf_to_cytof_marker_gate_paired.yaml
+
+experiment:
+  name: sf_to_cytof_marker_gate_unpaired
+
+training:
+  ot:
+    pairing: unpaired

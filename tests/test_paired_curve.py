@@ -34,7 +34,22 @@ def test_paired_curve_summary_fits_improvement_trend(tmp_path):
                     "selected_alpha": 1.0 if count else 0.0,
                     "test": {"patient_first_normalized_wasserstein": value + offset},
                 },
+                "cytoalign_marker_gate": {
+                    "selected_alphas": [1.0, 0.5] if count else [0.0, 0.0],
+                    "test": {
+                        "patient_first_normalized_wasserstein": value
+                        + offset
+                        - (0.02 if count else 0.0)
+                    },
+                },
             }
+            for method in methods.values():
+                method["test"].update(
+                    {
+                        "patient_first_normalized_median_error": value + offset,
+                        "macro_marker_median_spearman": 1.0 - value,
+                    }
+                )
             curve[str(count)] = {
                 "paired_specimens": [f"S{i}" for i in range(count)],
                 "methods": methods,
@@ -53,5 +68,7 @@ def test_paired_curve_summary_fits_improvement_trend(tmp_path):
 
     assert result["paired_sets_are_nested"]
     assert result["residual_baseline"] == "knn_hl"
+    assert result["primary_method"] == "cytoalign_marker_gate"
+    assert result["curve"]["1"]["active_marker_count"] == [2, 2]
     assert result["trend"]["raw_count_linear_fit"]["slope"] > 0
     assert result["first_count_showing_x_value"] == 1

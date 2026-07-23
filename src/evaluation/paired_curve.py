@@ -31,6 +31,22 @@ def _linear_fit(x, y) -> dict:
     }
 
 
+def _method_summary(runs, key: str, method: str) -> dict:
+    test = [
+        run["paired_curve"][key]["methods"][method]["test"] for run in runs
+    ]
+    summary = _mean_std(
+        point["patient_first_normalized_wasserstein"] for point in test
+    )
+    summary["median_error"] = _mean_std(
+        point["patient_first_normalized_median_error"] for point in test
+    )
+    summary["macro_spearman"] = _mean_std(
+        point["macro_marker_median_spearman"] for point in test
+    )
+    return summary
+
+
 def summarize_paired_curve(path: str | Path) -> dict:
     root = Path(path)
     runs = [
@@ -48,17 +64,20 @@ def summarize_paired_curve(path: str | Path) -> dict:
         )
         for name in baseline_names
     }
+    first_key = str(counts[0])
+    curve_methods = ["ot_hl", "cytoalign"]
+    if "cytoalign_marker_gate" in runs[0]["paired_curve"][first_key]["methods"]:
+        curve_methods.append("cytoalign_marker_gate")
+    primary_method = (
+        "cytoalign_marker_gate"
+        if "cytoalign_marker_gate" in curve_methods
+        else "cytoalign"
+    )
     curve = {}
     for count in counts:
         key = str(count)
         curve[key] = {
-            method: _mean_std(
-                run["paired_curve"][key]["methods"][method]["test"][
-                    "patient_first_normalized_wasserstein"
-                ]
-                for run in runs
-            )
-            for method in ("ot_hl", "cytoalign")
+            method: _method_summary(runs, key, method) for method in curve_methods
         }
         curve[key]["selected_alpha"] = [
             run["paired_curve"][key]["methods"]["cytoalign"]["selected_alpha"]
@@ -73,9 +92,34 @@ def summarize_paired_curve(path: str | Path) -> dict:
             ]
             for run in runs
         )
+        if primary_method == "cytoalign_marker_gate":
+            curve[key]["selected_marker_alphas"] = [
+                run["paired_curve"][key]["methods"][primary_method][
+                    "selected_alphas"
+                ]
+                for run in runs
+            ]
+            curve[key]["active_marker_count"] = [
+                sum(
+                    alpha > 0
+                    for alpha in run["paired_curve"][key]["methods"][primary_method][
+                        "selected_alphas"
+                    ]
+                )
+                for run in runs
+            ]
+            curve[key]["marker_gate_minus_global"] = _mean_std(
+                run["paired_curve"][key]["methods"][primary_method]["test"][
+                    "patient_first_normalized_wasserstein"
+                ]
+                - run["paired_curve"][key]["methods"]["cytoalign"]["test"][
+                    "patient_first_normalized_wasserstein"
+                ]
+                for run in runs
+            )
 
     mean_wasserstein = np.asarray(
-        [curve[str(count)]["cytoalign"]["mean"] for count in counts]
+        [curve[str(count)][primary_method]["mean"] for count in counts]
     )
     improvement = mean_wasserstein[0] - mean_wasserstein
     positive_counts = np.asarray([count for count in counts if count > 0])
@@ -95,7 +139,7 @@ def summarize_paired_curve(path: str | Path) -> dict:
             (
                 count
                 for count in counts
-                if curve[str(count)]["cytoalign"]["mean"] < values["mean"]
+                if curve[str(count)][primary_method]["mean"] < values["mean"]
             ),
             None,
         )
@@ -115,6 +159,8 @@ def summarize_paired_curve(path: str | Path) -> dict:
         "fold": 0,
         "n_seeds": len(runs),
         "residual_baseline": runs[0].get("residual_baseline", "ridge_hl"),
+        "pairing": runs[0].get("pairing", "matched"),
+        "primary_method": primary_method,
         "paired_counts": counts,
         "paired_sets_are_nested": nested,
         "baselines": baselines,
