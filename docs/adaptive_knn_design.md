@@ -73,3 +73,16 @@ prototype may make the weights query-dependent. If the diagonal prototype does
 not beat plain kNN, the adaptive-metric direction stops before adding a neural
 gating network.
 
+## First-screen implementation
+
+`sf_to_cytof_adaptive_knn.yaml` runs fold 0 at seeds 4207--4209 and evaluates
+the 19/15/12/8 realistic panel masks in one job per seed. Hyperparameters are
+selected by pooled validation populations without using cell-type labels.
+
+To keep the marker-specific search tractable, inference first finds the exact
+512 nearest cells under the plain panel Euclidean metric and then reranks those
+candidates independently for every target marker. Plain kNN uses the exact
+top 50 from the same search. This first screen compares items 1--4 above.
+Official CyTOFmerge and label-free CytoVI runs remain a second-stage benchmark
+and are only justified if the adaptive metric clears the internal plain-kNN
+go/no-go check.

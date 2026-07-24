@@ -1,0 +1,108 @@
+extends: ../base.yaml
+
+experiment:
+  name: sf_to_cytof_adaptive_knn
+  runner: adaptive_knn
+  fold: 0
+
+data:
+  source_modality: spectral_flow
+  target_modality: cytof
+  common_markers:
+    - CD38
+    - CD4
+    - CD123
+    - CD20
+    - CD56
+    - HLA-DR
+    - CD14
+    - CD45
+    - CD33
+    - CD3
+    - CD117
+    - CD27
+    - PD-1
+    - CD25
+    - CCR7
+    - CD34
+    - CD19
+    - CD8
+    - CD45RA
+
+training:
+  label_conditioning: false
+  adaptive_knn:
+    k: 50
+    candidate_k: 512
+    max_fit_cells: 100000
+    max_reference_cells: 50000
+    epochs: 12
+    steps_per_epoch: 24
+    query_batch_size: 128
+    reference_batch_size: 1024
+    inference_batch_size: 512
+    learning_rate: 0.05
+    temperatures: [0.02, 0.05]
+    regularizations: [0.01]
+    panel_masks:
+      full19:
+        - CD38
+        - CD4
+        - CD123
+        - CD20
+        - CD56
+        - HLA-DR
+        - CD14
+        - CD45
+        - CD33
+        - CD3
+        - CD117
+        - CD27
+        - PD-1
+        - CD25
+        - CCR7
+        - CD34
+        - CD19
+        - CD8
+        - CD45RA
+      practical15:
+        - CD45
+        - CD3
+        - CD19
+        - CD56
+        - CD14
+        - CD33
+        - CD34
+        - CD117
+        - HLA-DR
+        - CD38
+        - CD4
+        - CD8
+        - CD20
+        - CD123
+        - CD45RA
+      backbone12:
+        - CD45
+        - CD3
+        - CD19
+        - CD56
+        - CD14
+        - CD33
+        - CD34
+        - CD117
+        - HLA-DR
+        - CD38
+        - CD4
+        - CD8
+      minimal8:
+        - CD45
+        - CD3
+        - CD19
+        - CD56
+        - CD14
+        - CD33
+        - CD34
+        - CD117
+
+output:
+  save_models: false
