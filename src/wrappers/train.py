@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from src.config import load_config
-from src.training import run_adaptive_knn_experiment, run_experiment
+from src.training import run_cell_type_probe_fold, run_experiment
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -29,26 +29,19 @@ def main() -> None:
         path = Path(config[section][key])
         if not path.is_absolute():
             config[section][key] = str(PROJECT_ROOT / path)
-    if config["experiment"].get("runner") == "adaptive_knn":
-        result = run_adaptive_knn_experiment(config)
+    if config["experiment"].get("runner") == "cell_type_probe":
+        result = run_cell_type_probe_fold(config)
     else:
         result = run_experiment(config)
-    if result.get("runner") == "adaptive_knn":
+    if config["experiment"].get("runner") == "cell_type_probe":
         summary = {
             "status": result["status"],
             "experiment": result["experiment"],
             "fold": result["fold"],
             "seed": result["seed"],
-            "metrics_path": result["metrics_path"],
-            "test_wasserstein": {
-                panel: {
-                    method: values["test"]["cell_type_stratified"][
-                        "patient_first_normalized_wasserstein"
-                    ]
-                    for method, values in panel_result["methods"].items()
-                }
-                for panel, panel_result in result["panel_results"].items()
-            },
+            "result_path": result["result_path"],
+            "elapsed_seconds": result["elapsed_seconds"],
+            "hardware": result["hardware"],
         }
         print(json.dumps(summary, sort_keys=True))
         return

@@ -1,0 +1,55 @@
+extends: ../base.yaml
+
+experiment:
+  name: sf_to_cytof_rare_population_ablation_cv
+  runner: cell_type_probe
+
+data:
+  source_modality: spectral_flow
+  target_modality: cytof
+  common_markers:
+    - CD38
+    - CD4
+    - CD123
+    - CD20
+    - CD56
+    - HLA-DR
+    - CD14
+    - CD45
+    - CD33
+    - CD3
+    - CD117
+    - CD27
+    - PD-1
+    - CD25
+    - CCR7
+    - CD34
+    - CD19
+    - CD8
+    - CD45RA
+
+training:
+  label_conditioning: false
+  max_fit_cells: 250000
+  residual_baseline: knn_hl
+  ot:
+    k_max: 512
+    k_min: 32
+    epsilon_ratio: 0.1
+    sinkhorn_iterations: 300
+  knn:
+    k: 50
+    max_reference_cells: 50000
+    n_jobs: 4
+
+evaluation:
+  alphas: [0.0, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0]
+
+probe:
+  per_specimen_class_cap: 500
+  total_class_cap: 10000
+  classifier_c: 1.0
+  bootstrap_replicates: 2000
+
+output:
+  save_models: false

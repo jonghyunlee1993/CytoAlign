@@ -60,6 +60,7 @@ class SpecimenData:
     values: np.ndarray
     cell_types: np.ndarray
     original_row_indices: np.ndarray
+    fine_cell_types: np.ndarray | None = None
 
 
 def load_specimen(
@@ -105,12 +106,14 @@ def load_specimen(
         raise ValueError(
             f"{modality}/{stem} cell/label row mismatch: {len(cells)} != {len(label_frame)}"
         )
-    coarse = coarsen_cell_types(label_frame[_label_column(label_frame)].to_numpy())
+    fine = label_frame[_label_column(label_frame)].astype(str).to_numpy()
+    coarse = coarsen_cell_types(fine)
     rows = np.arange(len(cells), dtype=np.int64)
     if drop_unmapped:
         keep = coarse != None  # noqa: E711 - intentional object-array comparison
         cells = cells.iloc[np.flatnonzero(keep)]
         coarse = coarse[keep]
+        fine = fine[keep]
         rows = rows[keep]
     return SpecimenData(
         modality=str(modality),
@@ -119,6 +122,7 @@ def load_specimen(
         values=cells.to_numpy(dtype=np.float32, copy=True),
         cell_types=coarse,
         original_row_indices=rows,
+        fine_cell_types=np.asarray(fine, dtype=object),
     )
 
 
@@ -164,6 +168,7 @@ def load_specimen_reservoir(
     rng = np.random.RandomState(int(random_state))
     held_values = np.empty((0, len(markers)), dtype=np.float32)
     held_labels = np.empty(0, dtype=object)
+    held_fine_labels = np.empty(0, dtype=object)
     held_rows = np.empty(0, dtype=np.int64)
     held_priorities = np.empty(0, dtype=np.float64)
     row_offset = 0
@@ -178,19 +183,26 @@ def load_specimen_reservoir(
             )
         # pandas returns usecols in file order; restore the requested contract.
         current_values = cells[list(markers)].to_numpy(dtype=np.float32, copy=True)
-        current_labels = coarsen_cell_types(labels[_label_column(labels)].to_numpy())
+        current_fine_labels = (
+            labels[_label_column(labels)].astype(str).to_numpy()
+        )
+        current_labels = coarsen_cell_types(current_fine_labels)
         current_rows = row_offset + np.arange(len(cells), dtype=np.int64)
         row_offset += len(cells)
         if drop_unmapped:
             keep = current_labels != None  # noqa: E711
             current_values = current_values[keep]
             current_labels = current_labels[keep]
+            current_fine_labels = current_fine_labels[keep]
             current_rows = current_rows[keep]
         if current_rows.size == 0:
             continue
         current_priorities = rng.random_sample(current_rows.size)
         held_values = np.concatenate([held_values, current_values], axis=0)
         held_labels = np.concatenate([held_labels, current_labels])
+        held_fine_labels = np.concatenate(
+            [held_fine_labels, current_fine_labels]
+        )
         held_rows = np.concatenate([held_rows, current_rows])
         held_priorities = np.concatenate([held_priorities, current_priorities])
         if held_rows.size > int(maximum_cells):
@@ -199,6 +211,7 @@ def load_specimen_reservoir(
             ]
             held_values = held_values[selected]
             held_labels = held_labels[selected]
+            held_fine_labels = held_fine_labels[selected]
             held_rows = held_rows[selected]
             held_priorities = held_priorities[selected]
 
@@ -212,4 +225,5 @@ def load_specimen_reservoir(
         values=np.asarray(held_values[order], dtype=np.float32),
         cell_types=np.asarray(held_labels[order], dtype=object),
         original_row_indices=np.asarray(held_rows[order], dtype=np.int64),
+        fine_cell_types=np.asarray(held_fine_labels[order], dtype=object),
     )

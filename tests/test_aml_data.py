@@ -43,6 +43,7 @@ def test_load_specimen_keeps_original_row_indices_and_drops_unmapped(tmp_path):
     assert specimen.markers == ("CD4", "CD3")
     assert specimen.values.tolist() == [[4.0, 1.0], [6.0, 3.0]]
     assert specimen.cell_types.tolist() == ["T cell", "Blast"]
+    assert specimen.fine_cell_types.tolist() == ["T cell CD4", "Blast"]
     assert specimen.original_row_indices.tolist() == [0, 2]
 
 
@@ -73,6 +74,7 @@ def test_load_specimen_head_cap_keeps_cells_and_labels_aligned(tmp_path):
     specimen = load_specimen(tmp_path, "cytof", "R0001_A", maximum_rows=2)
     assert specimen.values.tolist() == [[1.0, 10.0], [2.0, 20.0]]
     assert specimen.cell_types.tolist() == ["Blast", "T cell"]
+    assert specimen.fine_cell_types.tolist() == ["Blast", "T cell CD4"]
     assert specimen.original_row_indices.tolist() == [0, 1]
 
 
@@ -110,6 +112,7 @@ def test_reservoir_sampler_is_uniform_order_independent_and_aligned(tmp_path):
         first.original_row_indices, second.original_row_indices
     )
     np.testing.assert_array_equal(first.values, second.values)
+    np.testing.assert_array_equal(first.fine_cell_types, second.fine_cell_types)
     np.testing.assert_array_equal(first.values[:, 1], first.original_row_indices)
     assert not np.array_equal(first.original_row_indices, np.arange(7))
     assert all(labels[index] != "Debris" for index in first.original_row_indices)

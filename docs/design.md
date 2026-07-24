@@ -1,66 +1,73 @@
-# CytoAlign design
+# 현재 구현 설계
 
-## Question
+## Data contract
 
-Given paired specimens measured with two cytometry panels, can common-marker
-optimal transport transfer information from source-exclusive markers to
-target-exclusive markers without paired cells?
+```text
+source Spectral Flow = H + X
+target CyTOF         = H + Y
+```
 
-## Training
+specimen identity는 paired되어 있지만 cell identity는 paired되어 있지
+않다. split unit은 patient이며 test patient는 common-space calibration,
+kNN reference, OT teacher, gate와 probe training에서 제외된다.
 
-1. Split patients into train, validation, and test.
-2. Fit separate source and target marginal percentile transforms on training
-   common markers.
-3. Fit the deployable Ridge baseline `b(H, L)` on target training cells.
-4. Within each training specimen and coarse cell type, compute balanced
-   Sinkhorn transport using common markers only.
-5. Project target-exclusive markers through the soft plan.
-6. Train `r(H, X, L)` to predict the projected target residual over the
-   baseline.
-7. Select the residual scale on validation population Wasserstein.
+## Translation
 
-At inference, CytoAlign uses source `H`, source-exclusive `X`, and coarse cell
-type `L`. It does not use target cells or optimal transport.
+1. train patients에서 source와 target H의 empirical CDF transform을
+   각각 fit한다.
+2. target-training cells의 patient-balanced reference bank로 median
+   `k=50` H-only kNN을 fit한다.
+3. paired train specimens 안에서 H만 사용한 balanced Sinkhorn OT로 soft
+   Y teacher를 만든다.
+4. kNN prediction과 teacher Y의 차이를 동일한 MLP 세 개로 학습한다.
 
-## Comparisons
+```text
+r_H       = residual(H)
+r_shuffle = residual(H, within-specimen shuffled X)
+r_HX      = residual(H, correct X)
+```
 
-- Global target-training median
-- Cell-type target-training median
-- Ridge `H+L`
-- kNN median `H+L`
-- Direct MLP `H+L`
-- OT residual distillation `H+L`
-- CytoAlign OT residual distillation `H+X+L`
+inference에서 OT나 target specimen은 사용하지 않는다.
 
-The `ot_hl` comparison isolates whether source-exclusive markers add value.
+## 왜 세 residual이 필요한가
 
-The residual baseline is configurable. The kNN-residual experiment replaces
-`b(H,L)` with the cell-type-conditioned kNN median while leaving the OT teacher,
-paired subsets, residual networks, and validation-selected scale unchanged:
+- `r_H`는 비선형 residual capacity만 추가한 control이다.
+- `r_shuffle`은 X marginal과 input dimension은 유지하지만 row-level
+  H/X association을 제거한 null이다.
+- `r_HX`가 두 control을 모두 이길 때만 X의 incremental value를
+  주장할 수 있다.
 
-`kNN(H,L) + alpha * r(H,X,L)`
+기존 label-free marker gate는 validation population Wasserstein으로
+`r_HX`의 marker별 alpha를 선택한다. ungated `alpha=1`도 항상 함께
+평가해 global objective가 rare signal을 제거하는지 확인한다.
 
-Its count-zero condition is exactly plain kNN. Comparing the `H+L` and `H+X+L`
-residuals tests whether specimen pairing and source-exclusive markers improve
-on the strongest direct baseline.
+## Probe
 
-## Paired-specimen dose response
+source original fine labels 8개와 coarse labels 5개를 translator와
+분리된 linear probe target으로 사용한다. probe training은
+specimen/class cap과 total class cap으로 균형화하고, test는 natural
+prevalence의 모든 reservoir-sampled cells를 평가한다.
 
-For fold 0, target-training data, preprocessing, validation/test specimens, and
-all baselines are fixed within each seed. Only the number of training specimens
-whose source-target identity is exposed to the OT teacher changes:
+primary representations:
 
-`0, 1, 2, 4, 8, 16, 32`
+```text
+Y_hat from kNN(H)
+Y_hat from kNN(H) + r_H
+Y_hat from kNN(H) + r_shuffle
+Y_hat from kNN(H) + r_HX
+```
 
-The sets are nested prefixes of one seed-specific permutation. Count zero is
-exactly the Ridge `H+L` baseline. The aggregate reports raw-count and
-doubling-scale linear fits, monotonic improvement steps, the first count that
-beats each baseline, and the first count where `H+X+L` beats `H+L` OT
-distillation.
+`H+Y_hat`는 downstream usability를 보는 secondary diagnostic이다. H가
+원래 label을 강하게 보존하므로 translation fidelity의 primary
+evidence로 사용하지 않는다.
 
-## Primary evaluation
+## Evaluation
 
-All methods are evaluated on unseen paired specimens without constructing cell
-pairs. The primary metric is patient-first, cell-type-stratified, normalized
-1-Wasserstein distance. Five patient folds and three training seeds are
-aggregated.
+- patient-first balanced accuracy, macro-F1, macro-AUPRC
+- T-subtype AUPRC
+- DN/DP macro AUPRC
+- DN과 DP 각각의 AUPRC와 recall
+- representation 간 paired patient-bootstrap interval
+
+다음 paired-count 확장에서는 H-only kNN reference는 고정하고 OT
+teacher에 공개되는 paired patient 수만 nested subset으로 줄인다.

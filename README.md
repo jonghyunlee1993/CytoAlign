@@ -1,9 +1,33 @@
 # CytoAlign
 
-CytoAlign predicts target-exclusive cytometry markers from a paired,
-cell-unpaired source panel. Training uses common-marker optimal transport only
-to create soft targets; inference uses source common markers, source-exclusive
-markers, and coarse cell type.
+CytoAlign은 cell-unpaired Spectral Flow `H+X`에서 CyTOF-exclusive `Y`를
+translation할 때, H-only kNN이 잃는 rare fine-cell-type 정보를 `X`가
+복원할 수 있는지 검증하는 연구 코드다.
+
+현재 결론과 다음 실험 계약:
+
+- [현재 결과와 다음 실험](docs/current_findings_and_next_experiment.md)
+- [전체 실험 회고](docs/experiment_retrospective.md)
+- [현재 구현 설계](docs/design.md)
+
+과거 raw outputs, scheduler logs, compact records, archive slides, stopped
+prototype와 local third-party baseline bundle은 문서로 통합한 뒤 제거했다.
+`data/`는 로컬 원자료이며 Git에 포함되지 않는다.
+
+## 현재 질문
+
+다음 네 표현을 동일한 OT teacher와 residual capacity 아래 비교한다.
+
+```text
+1. kNN(H)
+2. kNN(H) + residual(H)
+3. kNN(H) + residual(H, shuffled X)
+4. kNN(H) + residual(H, correct X)
+```
+
+primary endpoint는 translated `Y`만 사용한 DN/DP AUPRC와 recall이다.
+cell-type label은 translator 학습에 들어가지 않고 held-out probe에만
+사용한다.
 
 ## Setup
 
@@ -11,100 +35,37 @@ markers, and coarse cell type.
 python -m pip install -e '.[neural,dev]'
 ```
 
-Install the PyTorch build compatible with the LPC CUDA runtime when the default
-wheel is not appropriate.
+LPC CUDA runtime과 맞는 PyTorch build가 필요하다.
 
-## Configuration
-
-Experiment YAML files use a small `extends` key and recursively override
-`configs/base.yaml`. No configuration framework is required.
-
-```yaml
-extends: ../base.yaml
-experiment:
-  name: sf_to_cytof
-data:
-  source_modality: spectral_flow
-  target_modality: cytof
-```
-
-## Local run
+## Test
 
 ```bash
-python -m src.wrappers.train \
-  --config configs/experiments/smoke_sf_to_cytof.yaml \
-  --fold 0 \
-  --seed 4207
+pytest -q
 ```
 
-Production runs write a deployable `model.pkl` and `metrics.json` below
-`outputs/<experiment>/fold_<fold>/seed_<seed>/`.
-
-Predict one source specimen with a saved model:
-
-```bash
-python -m src.wrappers.predict \
-  --model outputs/sf_to_cytof/fold_0/seed_4207/model.pkl \
-  --data-root data/AML \
-  --specimen R0263_175 \
-  --output outputs/predictions/R0263_175.npz
-```
-
-## LPC submission
-
-The submission wrapper launches independent fold/seed jobs:
-
-```bash
-FOLDS="0 1 2 3 4" SEEDS="4207 4208 4209" \
-  QUEUE=kimgpu \
-  scripts/submit_train.sh configs/experiments/sf_to_cytof.yaml
-```
-
-Queue, GPU request, CPU, memory, walltime, and Python executable can be changed
-with `QUEUE`, `GPU_REQUEST`, `CPU_CORES`, `MEMORY_MB`, `WALLTIME`, and
-`PYTHON_BIN`.
-
-After all fold/seed jobs finish:
-
-```bash
-python -m src.wrappers.summarize --experiment sf_to_cytof
-```
-
-The summary reports whether CytoAlign beats Ridge, kNN, direct MLP, and the
-H-only OT distiller on mean test population Wasserstein, and whether source
-exclusive markers add value over the `ot_hl` control.
-
-## Paired-specimen curve
-
-Fold 0 can evaluate nested paired training sets of size
-`0, 1, 2, 4, 8, 16, 32` while fitting the baselines only once per seed:
+## 5-fold run
 
 ```bash
 QUEUE=dbeigpu \
 GPU_REQUEST='num=1:mig=1/1:mode=shared:gmodel=NVIDIAH200' \
-FOLDS=0 \
-SEEDS='4207 4208 4209' \
-scripts/submit_train.sh configs/experiments/sf_to_cytof_paired_curve.yaml
-```
-
-Aggregate the three seeds with:
-
-```bash
-python -m src.wrappers.summarize_paired_curve \
-  --experiment sf_to_cytof_paired_curve
-```
-
-To test source-exclusive residuals on top of the strongest `H+L` baseline,
-replace Ridge with kNN while keeping the same paired sets and controls:
-
-```bash
-QUEUE=dbeigpu \
-GPU_REQUEST='num=1:mig=1/1:mode=shared:gmodel=NVIDIAH200' \
-FOLDS=0 \
-SEEDS='4207 4208 4209' \
+FOLDS='0 1 2 3 4' \
+SEEDS='4207' \
 scripts/submit_train.sh \
-  configs/experiments/sf_to_cytof_knn_residual_curve.yaml
+  configs/experiments/sf_to_cytof_rare_population_ablation_cv.yaml
 ```
 
-Here count zero is exactly kNN `H+L`; `ot_hl` and `cytoalign` add validation-
-scaled OT residuals using `H+L` and `H+X+L`, respectively.
+queue, GPU request, CPU, memory, walltime와 Python executable은 각각
+`QUEUE`, `GPU_REQUEST`, `CPU_CORES`, `MEMORY_MB`, `WALLTIME`,
+`PYTHON_BIN`으로 지정한다.
+
+모든 fold가 끝난 뒤 patient-first summary를 만든다.
+
+```bash
+python -m src.wrappers.cell_type_probe \
+  --config configs/experiments/sf_to_cytof_rare_population_ablation_cv.yaml \
+  --summarize
+```
+
+생성되는 `outputs/`와 `logs/`는 disposable run state이며 Git에
+commit하지 않는다. 재실행 전에는 config와 Git commit을 결과 메타데이터에
+기록한다.
