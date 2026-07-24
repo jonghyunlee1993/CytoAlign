@@ -1,0 +1,702 @@
+{
+  "pre_specified_gate": {
+    "decisions": {
+      "paired": {
+        "counts_out_of_three": {
+          "ot_diagonal_exceeds_uniform": 3,
+          "positive_alpha": 3,
+          "test_beats_baseline_crossdecode_uniform": 0,
+          "validation_beats_baseline_crossdecode_uniform": 2
+        },
+        "decision": "retain_ot_decur_as_ablation",
+        "ot_decur_adds_value_over_internal_controls": true,
+        "ot_decur_replaces_direct_ot": false
+      },
+      "pooled": {
+        "counts_out_of_three": {
+          "ot_diagonal_exceeds_uniform": 3,
+          "positive_alpha": 3,
+          "test_beats_baseline_crossdecode_uniform": 1,
+          "validation_beats_baseline_crossdecode_uniform": 1
+        },
+        "decision": "stop_ot_decur",
+        "ot_decur_adds_value_over_internal_controls": false,
+        "ot_decur_replaces_direct_ot": false
+      }
+    },
+    "rule": "OT-DeCUR needs positive validation alpha, must beat H+L, OT-crossdecode-only, and uniform-DeCUR in at least two seeds and in mean test exact MAE, must show OT-vs-uniform common diagonal separation, and may not worsen direct-OT population W by more than 1%. It replaces direct OT only if mean test exact MAE also beats the frozen direct reference."
+  },
+  "runs": [
+    {
+      "baseline_hl": {
+        "test_exact_mae": 0.6274907138737185,
+        "test_population_wasserstein": 0.5088321890923274,
+        "validation_exact_mae": 0.6250083158267015,
+        "validation_population_wasserstein": 0.485028758744148
+      },
+      "coupling": {
+        "column_marginal_max_error": 1.30385160446167e-08,
+        "effective_targets_mean": 19.627078207253607,
+        "k_maximum": 128,
+        "k_median": 128.0,
+        "k_minimum": 32,
+        "n_blocks": 297,
+        "n_source_cells": 36304,
+        "normalized_entropy_mean": 0.5885277494838342,
+        "row_marginal_max_error": 3.1322240829467773e-05,
+        "top_probability_mean": 0.2542863401399317
+      },
+      "cuda_device": "NVIDIA H200 MIG 1g.18gb",
+      "cuda_visible_memory_bytes": 17179869184,
+      "direct_ot": {
+        "method": "mlp_paired_ot_hxl",
+        "test_exact_mae": 0.5945916782638496,
+        "test_population_wasserstein": 0.5201110604882443,
+        "validation_exact_mae": 0.6016166528872146
+      },
+      "elapsed_seconds": 128.90766835212708,
+      "host": "dbei-ai1",
+      "methods": {
+        "ot_crossdecode": {
+          "ot_common_diagonal": 0.0025857873260974884,
+          "selected_alpha": 0.25,
+          "test_exact_mae": 0.6221196618614823,
+          "test_population_wasserstein": 0.49842975777025783,
+          "uniform_common_diagonal": -1.4151470439644977e-17,
+          "validation_exact_mae": 0.6209662625092728,
+          "validation_population_wasserstein": 0.47620219806559094
+        },
+        "ot_decur": {
+          "ot_common_diagonal": 0.014114219695329666,
+          "selected_alpha": 0.25,
+          "test_exact_mae": 0.6225127091760563,
+          "test_population_wasserstein": 0.49888140562520145,
+          "uniform_common_diagonal": 8.698897673764881e-18,
+          "validation_exact_mae": 0.6215318614085767,
+          "validation_population_wasserstein": 0.47638431254727437
+        },
+        "uniform_decur": {
+          "ot_common_diagonal": 0.006632654927670956,
+          "selected_alpha": 0.25,
+          "test_exact_mae": 0.6226587844931961,
+          "test_population_wasserstein": 0.4979780448704223,
+          "uniform_common_diagonal": 6.531268562463957e-17,
+          "validation_exact_mae": 0.6220798757557243,
+          "validation_population_wasserstein": 0.4762837606242889
+        }
+      },
+      "pairing": "paired",
+      "seed": 4207
+    },
+    {
+      "baseline_hl": {
+        "test_exact_mae": 0.6241074831443364,
+        "test_population_wasserstein": 0.5090462460505765,
+        "validation_exact_mae": 0.6243406502916125,
+        "validation_population_wasserstein": 0.48630196898048406
+      },
+      "coupling": {
+        "column_marginal_max_error": 1.4901161193847656e-08,
+        "effective_targets_mean": 19.644532887622564,
+        "k_maximum": 128,
+        "k_median": 128.0,
+        "k_minimum": 32,
+        "n_blocks": 297,
+        "n_source_cells": 36304,
+        "normalized_entropy_mean": 0.5889974250536575,
+        "row_marginal_max_error": 2.6710331439971924e-05,
+        "top_probability_mean": 0.2535543868738393
+      },
+      "cuda_device": "NVIDIA H200 MIG 1g.18gb",
+      "cuda_visible_memory_bytes": 17179869184,
+      "direct_ot": {
+        "method": "mlp_paired_ot_hxl",
+        "test_exact_mae": 0.5983574654078618,
+        "test_population_wasserstein": 0.5223300627393027,
+        "validation_exact_mae": 0.6021627252105477
+      },
+      "elapsed_seconds": 125.30062508583069,
+      "host": "dbei-ai1",
+      "methods": {
+        "ot_crossdecode": {
+          "ot_common_diagonal": 0.018352992832660675,
+          "selected_alpha": 0.25,
+          "test_exact_mae": 0.6213296181047684,
+          "test_population_wasserstein": 0.49934372852652376,
+          "uniform_common_diagonal": 7.190896131882733e-17,
+          "validation_exact_mae": 0.6218215249935892,
+          "validation_population_wasserstein": 0.47689636805585023
+        },
+        "ot_decur": {
+          "ot_common_diagonal": 0.04388260841369629,
+          "selected_alpha": 0.25,
+          "test_exact_mae": 0.6215747987926153,
+          "test_population_wasserstein": 0.5003798730488811,
+          "uniform_common_diagonal": 3.2954147685173576e-17,
+          "validation_exact_mae": 0.6212627387822213,
+          "validation_population_wasserstein": 0.4780812037870027
+        },
+        "uniform_decur": {
+          "ot_common_diagonal": -0.001016972353681922,
+          "selected_alpha": 0.1,
+          "test_exact_mae": 0.6231528776074712,
+          "test_population_wasserstein": 0.5074132316465081,
+          "uniform_common_diagonal": -1.8615464766211923e-17,
+          "validation_exact_mae": 0.6235272042412291,
+          "validation_population_wasserstein": 0.484548169181852
+        }
+      },
+      "pairing": "paired",
+      "seed": 4208
+    },
+    {
+      "baseline_hl": {
+        "test_exact_mae": 0.6216399765389472,
+        "test_population_wasserstein": 0.5055225358016361,
+        "validation_exact_mae": 0.6206621080071356,
+        "validation_population_wasserstein": 0.4836322649264944
+      },
+      "coupling": {
+        "column_marginal_max_error": 1.6763806343078613e-08,
+        "effective_targets_mean": 19.64883359433826,
+        "k_maximum": 128,
+        "k_median": 128.0,
+        "k_minimum": 32,
+        "n_blocks": 297,
+        "n_source_cells": 36304,
+        "normalized_entropy_mean": 0.5892427003744877,
+        "row_marginal_max_error": 6.577558815479279e-05,
+        "top_probability_mean": 0.25323318291192104
+      },
+      "cuda_device": "NVIDIA H200 MIG 1g.18gb",
+      "cuda_visible_memory_bytes": 17179869184,
+      "direct_ot": {
+        "method": "mlp_paired_ot_hxl",
+        "test_exact_mae": 0.5936907855955867,
+        "test_population_wasserstein": 0.5190880309639672,
+        "validation_exact_mae": 0.6004107956152829
+      },
+      "elapsed_seconds": 128.98659110069275,
+      "host": "dbei-ai1",
+      "methods": {
+        "ot_crossdecode": {
+          "ot_common_diagonal": 0.016162391752004623,
+          "selected_alpha": 0.1,
+          "test_exact_mae": 0.6206031966979981,
+          "test_population_wasserstein": 0.5037098745662583,
+          "uniform_common_diagonal": 1.0394617598626343e-16,
+          "validation_exact_mae": 0.619906712215562,
+          "validation_population_wasserstein": 0.48179365049299455
+        },
+        "ot_decur": {
+          "ot_common_diagonal": 0.02952105551958084,
+          "selected_alpha": 0.1,
+          "test_exact_mae": 0.61991836671136,
+          "test_population_wasserstein": 0.5029074442064447,
+          "uniform_common_diagonal": 1.6606223867730407e-16,
+          "validation_exact_mae": 0.6191654845520971,
+          "validation_population_wasserstein": 0.4810195343462057
+        },
+        "uniform_decur": {
+          "ot_common_diagonal": 0.003494454314932227,
+          "selected_alpha": 0.1,
+          "test_exact_mae": 0.6199107811295715,
+          "test_population_wasserstein": 0.5028074367244608,
+          "uniform_common_diagonal": 3.107669254013952e-17,
+          "validation_exact_mae": 0.6194507840067887,
+          "validation_population_wasserstein": 0.48084832804250055
+        }
+      },
+      "pairing": "paired",
+      "seed": 4209
+    },
+    {
+      "baseline_hl": {
+        "test_exact_mae": 0.6274907138737185,
+        "test_population_wasserstein": 0.5088321890923274,
+        "validation_exact_mae": 0.6250083158267015,
+        "validation_population_wasserstein": 0.485028758744148
+      },
+      "coupling": {
+        "column_marginal_max_error": 1.30385160446167e-08,
+        "effective_targets_mean": 66.54378870440654,
+        "k_maximum": 128,
+        "k_median": 128.0,
+        "k_minimum": 32,
+        "n_blocks": 297,
+        "n_source_cells": 36304,
+        "normalized_entropy_mean": 0.8624931252765334,
+        "row_marginal_max_error": 9.313225746154785e-09,
+        "top_probability_mean": 0.08084289932792837
+      },
+      "cuda_device": "NVIDIA H200 MIG 1g.18gb",
+      "cuda_visible_memory_bytes": 17179869184,
+      "direct_ot": {
+        "method": "mlp_pooled_ot_hxl",
+        "test_exact_mae": 0.6219666215786743,
+        "test_population_wasserstein": 0.5234291978275026,
+        "validation_exact_mae": 0.6198471879776736
+      },
+      "elapsed_seconds": 123.46460294723511,
+      "host": "dbei-ai1",
+      "methods": {
+        "ot_crossdecode": {
+          "ot_common_diagonal": 0.0014077180530875921,
+          "selected_alpha": 0.1,
+          "test_exact_mae": 0.6248141440778742,
+          "test_population_wasserstein": 0.5055309035793469,
+          "uniform_common_diagonal": -3.6041648952364505e-18,
+          "validation_exact_mae": 0.6232244341471074,
+          "validation_population_wasserstein": 0.4826423124363609
+        },
+        "ot_decur": {
+          "ot_common_diagonal": 0.0036476224195212126,
+          "selected_alpha": 0.25,
+          "test_exact_mae": 0.6232391474061574,
+          "test_population_wasserstein": 0.49699508252859853,
+          "uniform_common_diagonal": 1.5534269924011098e-17,
+          "validation_exact_mae": 0.6228681506245941,
+          "validation_population_wasserstein": 0.47560623441787725
+        },
+        "uniform_decur": {
+          "ot_common_diagonal": 0.00019758351845666766,
+          "selected_alpha": 0.0,
+          "test_exact_mae": 0.6274907138737185,
+          "test_population_wasserstein": 0.5088321890923274,
+          "uniform_common_diagonal": 3.549027351709381e-17,
+          "validation_exact_mae": 0.6250083158267015,
+          "validation_population_wasserstein": 0.485028758744148
+        }
+      },
+      "pairing": "pooled",
+      "seed": 4207
+    },
+    {
+      "baseline_hl": {
+        "test_exact_mae": 0.6241074831443364,
+        "test_population_wasserstein": 0.5090462460505765,
+        "validation_exact_mae": 0.6243406502916125,
+        "validation_population_wasserstein": 0.48630196898048406
+      },
+      "coupling": {
+        "column_marginal_max_error": 1.4901161193847656e-08,
+        "effective_targets_mean": 66.37618669837413,
+        "k_maximum": 128,
+        "k_median": 128.0,
+        "k_minimum": 32,
+        "n_blocks": 297,
+        "n_source_cells": 36304,
+        "normalized_entropy_mean": 0.8619730504674944,
+        "row_marginal_max_error": 9.313225746154785e-09,
+        "top_probability_mean": 0.08098146599099693
+      },
+      "cuda_device": "NVIDIA H200 MIG 1g.18gb",
+      "cuda_visible_memory_bytes": 17179869184,
+      "direct_ot": {
+        "method": "mlp_pooled_ot_hxl",
+        "test_exact_mae": 0.6230312032350529,
+        "test_population_wasserstein": 0.5233783907861661,
+        "validation_exact_mae": 0.621634104420919
+      },
+      "elapsed_seconds": 122.76241159439087,
+      "host": "dbei-ai1",
+      "methods": {
+        "ot_crossdecode": {
+          "ot_common_diagonal": 0.003833961673080921,
+          "selected_alpha": 0.1,
+          "test_exact_mae": 0.6209758307817567,
+          "test_population_wasserstein": 0.5052676104946118,
+          "uniform_common_diagonal": 1.472114145570412e-16,
+          "validation_exact_mae": 0.6221999694341782,
+          "validation_population_wasserstein": 0.4831683100597566
+        },
+        "ot_decur": {
+          "ot_common_diagonal": 0.007729003205895424,
+          "selected_alpha": 0.1,
+          "test_exact_mae": 0.6217718003431161,
+          "test_population_wasserstein": 0.5059948514091664,
+          "uniform_common_diagonal": 4.496832404268566e-17,
+          "validation_exact_mae": 0.6234603194077943,
+          "validation_population_wasserstein": 0.4839558890367305
+        },
+        "uniform_decur": {
+          "ot_common_diagonal": 0.0008490347536280751,
+          "selected_alpha": 0.0,
+          "test_exact_mae": 0.6241074831443364,
+          "test_population_wasserstein": 0.5090462460505765,
+          "uniform_common_diagonal": 7.017739436406803e-17,
+          "validation_exact_mae": 0.6243406502916125,
+          "validation_population_wasserstein": 0.48630196898048406
+        }
+      },
+      "pairing": "pooled",
+      "seed": 4208
+    },
+    {
+      "baseline_hl": {
+        "test_exact_mae": 0.6216399765389472,
+        "test_population_wasserstein": 0.5055225358016361,
+        "validation_exact_mae": 0.6206621080071356,
+        "validation_population_wasserstein": 0.4836322649264944
+      },
+      "coupling": {
+        "column_marginal_max_error": 1.30385160446167e-08,
+        "effective_targets_mean": 66.39026271935666,
+        "k_maximum": 128,
+        "k_median": 128.0,
+        "k_minimum": 32,
+        "n_blocks": 297,
+        "n_source_cells": 36304,
+        "normalized_entropy_mean": 0.8621645138319896,
+        "row_marginal_max_error": 1.30385160446167e-08,
+        "top_probability_mean": 0.0805283482954759
+      },
+      "cuda_device": "NVIDIA H200 MIG 1g.18gb",
+      "cuda_visible_memory_bytes": 17179869184,
+      "direct_ot": {
+        "method": "mlp_pooled_ot_hxl",
+        "test_exact_mae": 0.6212483842032803,
+        "test_population_wasserstein": 0.5224653970285429,
+        "validation_exact_mae": 0.6198857626930561
+      },
+      "elapsed_seconds": 111.94872617721558,
+      "host": "dbei-ai1",
+      "methods": {
+        "ot_crossdecode": {
+          "ot_common_diagonal": 0.00482703372836113,
+          "selected_alpha": 0.1,
+          "test_exact_mae": 0.6212039280535924,
+          "test_population_wasserstein": 0.5028326097138773,
+          "uniform_common_diagonal": 9.853016129473573e-17,
+          "validation_exact_mae": 0.6201002043210179,
+          "validation_population_wasserstein": 0.48068419113950356
+        },
+        "ot_decur": {
+          "ot_common_diagonal": 0.005553387105464935,
+          "selected_alpha": 0.1,
+          "test_exact_mae": 0.621093754155084,
+          "test_population_wasserstein": 0.5029501575730375,
+          "uniform_common_diagonal": 5.571318678715145e-18,
+          "validation_exact_mae": 0.6201476782746723,
+          "validation_population_wasserstein": 0.4808776009581111
+        },
+        "uniform_decur": {
+          "ot_common_diagonal": 0.0018327041761949658,
+          "selected_alpha": 0.1,
+          "test_exact_mae": 0.6206977645183159,
+          "test_population_wasserstein": 0.5032320121199101,
+          "uniform_common_diagonal": 7.242881455531486e-17,
+          "validation_exact_mae": 0.6200257291586356,
+          "validation_population_wasserstein": 0.48143544608678557
+        }
+      },
+      "pairing": "pooled",
+      "seed": 4209
+    }
+  ],
+  "seed_comparisons": [
+    {
+      "ot_diagonal_exceeds_uniform": true,
+      "pairing": "paired",
+      "positive_alpha": true,
+      "seed": 4207,
+      "test_beats_baseline_crossdecode_uniform": false,
+      "validation_beats_baseline_crossdecode_uniform": false
+    },
+    {
+      "ot_diagonal_exceeds_uniform": true,
+      "pairing": "paired",
+      "positive_alpha": true,
+      "seed": 4208,
+      "test_beats_baseline_crossdecode_uniform": false,
+      "validation_beats_baseline_crossdecode_uniform": true
+    },
+    {
+      "ot_diagonal_exceeds_uniform": true,
+      "pairing": "paired",
+      "positive_alpha": true,
+      "seed": 4209,
+      "test_beats_baseline_crossdecode_uniform": false,
+      "validation_beats_baseline_crossdecode_uniform": true
+    },
+    {
+      "ot_diagonal_exceeds_uniform": true,
+      "pairing": "pooled",
+      "positive_alpha": true,
+      "seed": 4207,
+      "test_beats_baseline_crossdecode_uniform": true,
+      "validation_beats_baseline_crossdecode_uniform": true
+    },
+    {
+      "ot_diagonal_exceeds_uniform": true,
+      "pairing": "pooled",
+      "positive_alpha": true,
+      "seed": 4208,
+      "test_beats_baseline_crossdecode_uniform": false,
+      "validation_beats_baseline_crossdecode_uniform": false
+    },
+    {
+      "ot_diagonal_exceeds_uniform": true,
+      "pairing": "pooled",
+      "positive_alpha": true,
+      "seed": 4209,
+      "test_beats_baseline_crossdecode_uniform": false,
+      "validation_beats_baseline_crossdecode_uniform": false
+    }
+  ],
+  "status": "ok",
+  "summary": {
+    "paired": {
+      "baseline_hl": {
+        "test_exact_mae": {
+          "mean": 0.6244127245190007,
+          "sample_std": 0.002937288045583339
+        },
+        "test_population_wasserstein": {
+          "mean": 0.50780032364818,
+          "sample_std": 0.0019755235257371763
+        },
+        "validation_exact_mae": {
+          "mean": 0.6233370247084832,
+          "sample_std": 0.0023404761985646254
+        },
+        "validation_population_wasserstein": {
+          "mean": 0.48498766421704215,
+          "sample_std": 0.0013353263661332842
+        }
+      },
+      "direct_ot": {
+        "test_exact_mae": {
+          "mean": 0.5955466430890994,
+          "sample_std": 0.002475569324553893
+        },
+        "test_population_wasserstein": {
+          "mean": 0.5205097180638381,
+          "sample_std": 0.0016573739484513057
+        },
+        "validation_exact_mae": {
+          "mean": 0.6013967245710151,
+          "sample_std": 0.0008964321920206542
+        }
+      },
+      "methods": {
+        "ot_crossdecode": {
+          "ot_common_diagonal": {
+            "mean": 0.012367057303587595,
+            "sample_std": 0.008541347379251992
+          },
+          "selected_alpha": {
+            "mean": 0.19999999999999998,
+            "sample_std": 0.08660254037844387
+          },
+          "test_exact_mae": {
+            "mean": 0.6213508255547496,
+            "sample_std": 0.0007584549854581167
+          },
+          "test_population_wasserstein": {
+            "mean": 0.5004944536210133,
+            "sample_std": 0.0028218849245083364
+          },
+          "uniform_common_diagonal": {
+            "mean": 5.390122228848193e-17,
+            "sample_std": 6.107350097688431e-17
+          },
+          "validation_exact_mae": {
+            "mean": 0.6208981665728079,
+            "sample_std": 0.0009592209266620009
+          },
+          "validation_population_wasserstein": {
+            "mean": 0.47829740553814526,
+            "sample_std": 0.0030476654314534083
+          }
+        },
+        "ot_decur": {
+          "ot_common_diagonal": {
+            "mean": 0.029172627876202267,
+            "sample_std": 0.014887252704543812
+          },
+          "selected_alpha": {
+            "mean": 0.19999999999999998,
+            "sample_std": 0.08660254037844387
+          },
+          "test_exact_mae": {
+            "mean": 0.6213352915600105,
+            "sample_std": 0.0013136498741613246
+          },
+          "test_population_wasserstein": {
+            "mean": 0.5007229076268424,
+            "sample_std": 0.0020348221557847978
+          },
+          "uniform_common_diagonal": {
+            "mean": 6.923842801208084e-17,
+            "sample_std": 8.472435908332522e-17
+          },
+          "validation_exact_mae": {
+            "mean": 0.620653361580965,
+            "sample_std": 0.0012955463275309042
+          },
+          "validation_population_wasserstein": {
+            "mean": 0.4784950168934943,
+            "sample_std": 0.0023451548449196697
+          }
+        },
+        "uniform_decur": {
+          "ot_common_diagonal": {
+            "mean": 0.003036712296307087,
+            "sample_std": 0.0038453017050181925
+          },
+          "selected_alpha": {
+            "mean": 0.15,
+            "sample_std": 0.08660254037844387
+          },
+          "test_exact_mae": {
+            "mean": 0.6219074810767463,
+            "sample_std": 0.00174675127327253
+          },
+          "test_population_wasserstein": {
+            "mean": 0.502732904413797,
+            "sample_std": 0.004718034937758061
+          },
+          "uniform_common_diagonal": {
+            "mean": 2.5924637799522388e-17,
+            "sample_std": 4.2200608503256e-17
+          },
+          "validation_exact_mae": {
+            "mean": 0.621685954667914,
+            "sample_std": 0.0020665625684951065
+          },
+          "validation_population_wasserstein": {
+            "mean": 0.48056008594954713,
+            "sample_std": 0.00413973728993679
+          }
+        }
+      }
+    },
+    "pooled": {
+      "baseline_hl": {
+        "test_exact_mae": {
+          "mean": 0.6244127245190007,
+          "sample_std": 0.002937288045583339
+        },
+        "test_population_wasserstein": {
+          "mean": 0.50780032364818,
+          "sample_std": 0.0019755235257371763
+        },
+        "validation_exact_mae": {
+          "mean": 0.6233370247084832,
+          "sample_std": 0.0023404761985646254
+        },
+        "validation_population_wasserstein": {
+          "mean": 0.48498766421704215,
+          "sample_std": 0.0013353263661332842
+        }
+      },
+      "direct_ot": {
+        "test_exact_mae": {
+          "mean": 0.6220820696723358,
+          "sample_std": 0.0008969989530429708
+        },
+        "test_population_wasserstein": {
+          "mean": 0.5230909952140705,
+          "sample_std": 0.0005423791627302459
+        },
+        "validation_exact_mae": {
+          "mean": 0.6204556850305496,
+          "sample_std": 0.0010207233694129847
+        }
+      },
+      "methods": {
+        "ot_crossdecode": {
+          "ot_common_diagonal": {
+            "mean": 0.0033562378181765475,
+            "sample_std": 0.0017590039746832164
+          },
+          "selected_alpha": {
+            "mean": 0.10000000000000002,
+            "sample_std": 1.6996749443881478e-17
+          },
+          "test_exact_mae": {
+            "mean": 0.6223313009710744,
+            "sample_std": 0.0021532276960628343
+          },
+          "test_population_wasserstein": {
+            "mean": 0.5045437079292787,
+            "sample_std": 0.0014876907068270605
+          },
+          "uniform_common_diagonal": {
+            "mean": 8.071247031884683e-17,
+            "sample_std": 7.697036660407545e-17
+          },
+          "validation_exact_mae": {
+            "mean": 0.6218415359674344,
+            "sample_std": 0.001592657814509528
+          },
+          "validation_population_wasserstein": {
+            "mean": 0.48216493787854037,
+            "sample_std": 0.0013090555961572218
+          }
+        },
+        "ot_decur": {
+          "ot_common_diagonal": {
+            "mean": 0.005643337576960524,
+            "sample_std": 0.0020421766809798443
+          },
+          "selected_alpha": {
+            "mean": 0.15,
+            "sample_std": 0.08660254037844387
+          },
+          "test_exact_mae": {
+            "mean": 0.6220349006347858,
+            "sample_std": 0.0010966286395335827
+          },
+          "test_population_wasserstein": {
+            "mean": 0.5019800305036008,
+            "sample_std": 0.0045776434848129035
+          },
+          "uniform_common_diagonal": {
+            "mean": 2.2024637548470635e-17,
+            "sample_std": 2.0484742171617754e-17
+          },
+          "validation_exact_mae": {
+            "mean": 0.6221587161023536,
+            "sample_std": 0.0017665986599176842
+          },
+          "validation_population_wasserstein": {
+            "mean": 0.48014657480423956,
+            "sample_std": 0.004222556392964739
+          }
+        },
+        "uniform_decur": {
+          "ot_common_diagonal": {
+            "mean": 0.0009597741494265696,
+            "sample_std": 0.0008231660231551062
+          },
+          "selected_alpha": {
+            "mean": 0.03333333333333333,
+            "sample_std": 0.05773502691896258
+          },
+          "test_exact_mae": {
+            "mean": 0.6240986538454569,
+            "sample_std": 0.003396483284760128
+          },
+          "test_population_wasserstein": {
+            "mean": 0.5070368157542714,
+            "sample_std": 0.003296794369896317
+          },
+          "uniform_common_diagonal": {
+            "mean": 5.936549414549224e-17,
+            "sample_std": 2.070716888568823e-17
+          },
+          "validation_exact_mae": {
+            "mean": 0.6231248984256498,
+            "sample_std": 0.0027046408127310577
+          },
+          "validation_population_wasserstein": {
+            "mean": 0.48425539127047257,
+            "sample_std": 0.0025237539907303303
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,225 @@
+{
+  "effect_size": {
+    "n_patients": 17,
+    "paired_minus_direct_test_exact_mae": -0.0005389531902140199,
+    "paired_minus_direct_test_exact_spearman": 0.000478800332296081,
+    "paired_minus_direct_test_population_wasserstein": -0.0003648548382978456,
+    "patient_cluster_bootstrap_exact_mae_delta_95_percent_ci": [
+      -0.0016213298640939144,
+      0.0007527624345426959
+    ],
+    "patient_cluster_bootstrap_probability_of_improvement": 0.8108,
+    "patients_improved_after_seed_average": 12,
+    "practical_interpretation": "directional_signal_but_not_yet_material_or_precise",
+    "relative_exact_mae_improvement_percent": 0.09048573485171899
+  },
+  "frozen_direct_ot_reference": {
+    "test_exact_mae": {
+      "mean": 0.5955466430890994,
+      "standard_deviation": 0.0020212938893478137,
+      "values": [
+        0.5945916782638496,
+        0.5983574654078618,
+        0.5936907855955867
+      ]
+    },
+    "test_population_wasserstein": {
+      "mean": 0.5205097180638381,
+      "standard_deviation": 0.0013532401622291764,
+      "values": [
+        0.5201110604882443,
+        0.5223300627393027,
+        0.5190880309639672
+      ]
+    }
+  },
+  "gate_counts": {
+    "paired_beats_direct_test": 2,
+    "paired_beats_direct_validation": 2,
+    "paired_beats_uniform_test": 2,
+    "paired_beats_uniform_validation": 2
+  },
+  "method_summary": {
+    "direct_ot": {
+      "selected_alpha": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "test_exact_mae": {
+        "mean": 0.5956222725020851,
+        "standard_deviation": 0.0019761647544760297,
+        "values": [
+          0.5954952659059289,
+          0.5981035728757362,
+          0.5932679787245901
+        ]
+      },
+      "test_exact_spearman": {
+        "mean": 0.3875665303423939,
+        "standard_deviation": 0.0008998047856583505,
+        "values": [
+          0.3880185335696791,
+          0.38837069511838623,
+          0.3863103623391165
+        ]
+      },
+      "test_population_wasserstein": {
+        "mean": 0.5202791574465836,
+        "standard_deviation": 0.0016474957765058274,
+        "values": [
+          0.5213657945841541,
+          0.5215207137470387,
+          0.5179509640085578
+        ]
+      },
+      "validation_exact_mae": {
+        "mean": 0.6020282905713306,
+        "standard_deviation": 0.0003579032371396151,
+        "values": [
+          0.6024982747445188,
+          0.6016305771018546,
+          0.6019560198676184
+        ]
+      }
+    },
+    "paired_decur_aux": {
+      "selected_alpha": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "test_exact_mae": {
+        "mean": 0.5950833193118711,
+        "standard_deviation": 0.0027235204373328406,
+        "values": [
+          0.5948078290069652,
+          0.5985481388815533,
+          0.5918939900470948
+        ]
+      },
+      "test_exact_spearman": {
+        "mean": 0.38804533067469,
+        "standard_deviation": 0.0001986042032986924,
+        "values": [
+          0.38787295446608155,
+          0.3883235611607259,
+          0.3879394763972624
+        ]
+      },
+      "test_population_wasserstein": {
+        "mean": 0.5199143026082857,
+        "standard_deviation": 0.0020038828621771507,
+        "values": [
+          0.5211438640824996,
+          0.5215107327891688,
+          0.517088310953189
+        ]
+      },
+      "validation_exact_mae": {
+        "mean": 0.6012766810167279,
+        "standard_deviation": 0.0016806348033538297,
+        "values": [
+          0.6020122428972634,
+          0.60286619707827,
+          0.5989516030746505
+        ]
+      }
+    },
+    "uniform_decur_aux": {
+      "selected_alpha": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "test_exact_mae": {
+        "mean": 0.595622270563819,
+        "standard_deviation": 0.0019761656742839384,
+        "values": [
+          0.5954952608915178,
+          0.5981035734820442,
+          0.593267977317895
+        ]
+      },
+      "test_exact_spearman": {
+        "mean": 0.38756653070854435,
+        "standard_deviation": 0.0008998067585066356,
+        "values": [
+          0.3880185354206527,
+          0.3883706968382999,
+          0.38631035986668066
+        ]
+      },
+      "test_population_wasserstein": {
+        "mean": 0.520279153888811,
+        "standard_deviation": 0.001647497338341551,
+        "values": [
+          0.5213657886918922,
+          0.5215207145848764,
+          0.5179509583896645
+        ]
+      },
+      "validation_exact_mae": {
+        "mean": 0.602028288370302,
+        "standard_deviation": 0.00035790192107958813,
+        "values": [
+          0.602498270267762,
+          0.6016305754509792,
+          0.6019560193921649
+        ]
+      }
+    }
+  },
+  "pre_specified_gate": {
+    "decision": "promote_decur_auxiliary",
+    "passed": true,
+    "rule": "Paired-OT DeCUR must beat direct and uniform DeCUR on validation in at least two seeds and on mean test exact MAE."
+  },
+  "runs": [
+    {
+      "artifact": "artifacts/direct_ot_decur_aux/results/seed4207.json",
+      "cuda_device": "NVIDIA H200 MIG 1g.18gb",
+      "elapsed_seconds": 118.77489352226257,
+      "host": "dbei-ai1",
+      "seed": 4207
+    },
+    {
+      "artifact": "artifacts/direct_ot_decur_aux/results/seed4208.json",
+      "cuda_device": "NVIDIA H200 MIG 1g.18gb",
+      "elapsed_seconds": 121.73002672195435,
+      "host": "dbei-ai1",
+      "seed": 4208
+    },
+    {
+      "artifact": "artifacts/direct_ot_decur_aux/results/seed4209.json",
+      "cuda_device": "NVIDIA H200 MIG 1g.18gb",
+      "elapsed_seconds": 119.13068771362305,
+      "host": "dbei-ai1",
+      "seed": 4209
+    }
+  ],
+  "seed_comparisons": [
+    {
+      "paired_beats_direct_test": true,
+      "paired_beats_direct_validation": true,
+      "paired_beats_uniform_test": true,
+      "paired_beats_uniform_validation": true,
+      "seed": 4207
+    },
+    {
+      "paired_beats_direct_test": false,
+      "paired_beats_direct_validation": false,
+      "paired_beats_uniform_test": false,
+      "paired_beats_uniform_validation": false,
+      "seed": 4208
+    },
+    {
+      "paired_beats_direct_test": true,
+      "paired_beats_direct_validation": true,
+      "paired_beats_uniform_test": true,
+      "paired_beats_uniform_validation": true,
+      "seed": 4209
+    }
+  ],
+  "status": "ok"
+}

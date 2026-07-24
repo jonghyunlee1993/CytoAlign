@@ -1,0 +1,191 @@
+{
+  "baselines": {
+    "cell_type_median": {
+      "mean": 1.3118036733561504,
+      "std": 0.0,
+      "values": [
+        1.3118036733561504
+      ]
+    },
+    "global_median": {
+      "mean": 1.5497842208653552,
+      "std": 0.0,
+      "values": [
+        1.5497842208653552
+      ]
+    },
+    "knn_hl": {
+      "mean": 0.9698587797107888,
+      "std": 0.0,
+      "values": [
+        0.9698587797107888
+      ]
+    },
+    "mlp_hl": {
+      "mean": 1.0304441100840291,
+      "std": 0.0,
+      "values": [
+        1.0304441100840291
+      ]
+    },
+    "ridge_hl": {
+      "mean": 1.1042262574581092,
+      "std": 0.0,
+      "values": [
+        1.1042262574581092
+      ]
+    }
+  },
+  "curve": {
+    "32": {
+      "active_marker_count": [
+        17
+      ],
+      "cytoalign": {
+        "macro_spearman": {
+          "mean": 0.7347281697822468,
+          "std": 0.0,
+          "values": [
+            0.7347281697822468
+          ]
+        },
+        "mean": 0.9677682679426479,
+        "median_error": {
+          "mean": 0.49931214832629073,
+          "std": 0.0,
+          "values": [
+            0.49931214832629073
+          ]
+        },
+        "std": 0.0,
+        "values": [
+          0.9677682679426479
+        ]
+      },
+      "cytoalign_marker_gate": {
+        "macro_spearman": {
+          "mean": 0.7475384231624205,
+          "std": 0.0,
+          "values": [
+            0.7475384231624205
+          ]
+        },
+        "mean": 0.9567258462251473,
+        "median_error": {
+          "mean": 0.49780088880333734,
+          "std": 0.0,
+          "values": [
+            0.49780088880333734
+          ]
+        },
+        "std": 0.0,
+        "values": [
+          0.9567258462251473
+        ]
+      },
+      "cytoalign_minus_ot_hl": {
+        "mean": -0.0006436393647645255,
+        "std": 0.0,
+        "values": [
+          -0.0006436393647645255
+        ]
+      },
+      "marker_gate_minus_global": {
+        "mean": -0.011042421717500583,
+        "std": 0.0,
+        "values": [
+          -0.011042421717500583
+        ]
+      },
+      "ot_hl": {
+        "macro_spearman": {
+          "mean": 0.7304665362308771,
+          "std": 0.0,
+          "values": [
+            0.7304665362308771
+          ]
+        },
+        "mean": 0.9684119073074124,
+        "median_error": {
+          "mean": 0.4999001713896153,
+          "std": 0.0,
+          "values": [
+            0.4999001713896153
+          ]
+        },
+        "std": 0.0,
+        "values": [
+          0.9684119073074124
+        ]
+      },
+      "selected_alpha": [
+        0.1
+      ],
+      "selected_marker_alphas": [
+        [
+          0.25,
+          0.0,
+          0.0,
+          1.0,
+          0.5,
+          1.0,
+          0.0,
+          1.0,
+          0.0,
+          0.5,
+          0.0,
+          0.25,
+          0.1,
+          0.5,
+          0.1,
+          0.5,
+          0.5,
+          1.0,
+          0.0,
+          0.0,
+          0.5,
+          0.025,
+          0.25,
+          0.0,
+          0.05
+        ]
+      ]
+    }
+  },
+  "experiment": "sf_to_cytof_go_nogo_matched",
+  "first_count_beating_baseline": {
+    "cell_type_median": 32,
+    "global_median": 32,
+    "knn_hl": 32,
+    "mlp_hl": 32,
+    "ridge_hl": 32
+  },
+  "first_count_showing_x_value": 32,
+  "fold": 0,
+  "n_seeds": 1,
+  "paired_counts": [
+    32
+  ],
+  "paired_sets_are_nested": true,
+  "pairing": "matched",
+  "primary_method": "cytoalign_marker_gate",
+  "residual_baseline": "knn_hl",
+  "status": "ok",
+  "trend": {
+    "doubling_linear_fit": {
+      "intercept": 0.0,
+      "r_squared": 1.0,
+      "slope": -0.0
+    },
+    "improvement_over_zero": [
+      0.0
+    ],
+    "monotonic_improvement_steps": 0,
+    "raw_count_linear_fit": {
+      "intercept": 0.0,
+      "r_squared": 1.0,
+      "slope": -0.0
+    },
+    "total_steps": 0
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "baselines": {
+    "cell_type_median": {
+      "mean": 0.8421213944425885,
+      "std": 0.0,
+      "values": [
+        0.8421213944425885
+      ]
+    },
+    "global_median": {
+      "mean": 0.9139872866592526,
+      "std": 0.0,
+      "values": [
+        0.9139872866592526
+      ]
+    },
+    "knn_hl": {
+      "mean": 0.6378137239578594,
+      "std": 0.0,
+      "values": [
+        0.6378137239578594
+      ]
+    },
+    "mlp_hl": {
+      "mean": 1.025161568934616,
+      "std": 0.0,
+      "values": [
+        1.025161568934616
+      ]
+    },
+    "ridge_hl": {
+      "mean": 0.805427532876668,
+      "std": 0.0,
+      "values": [
+        0.805427532876668
+      ]
+    }
+  },
+  "curve": {
+    "0": {
+      "cytoalign": {
+        "mean": 0.6378137239578594,
+        "std": 0.0,
+        "values": [
+          0.6378137239578594
+        ]
+      },
+      "cytoalign_minus_ot_hl": {
+        "mean": 0.0,
+        "std": 0.0,
+        "values": [
+          0.0
+        ]
+      },
+      "ot_hl": {
+        "mean": 0.6378137239578594,
+        "std": 0.0,
+        "values": [
+          0.6378137239578594
+        ]
+      },
+      "selected_alpha": [
+        0.0
+      ]
+    },
+    "1": {
+      "cytoalign": {
+        "mean": 0.6378137239578594,
+        "std": 0.0,
+        "values": [
+          0.6378137239578594
+        ]
+      },
+      "cytoalign_minus_ot_hl": {
+        "mean": 0.0,
+        "std": 0.0,
+        "values": [
+          0.0
+        ]
+      },
+      "ot_hl": {
+        "mean": 0.6378137239578594,
+        "std": 0.0,
+        "values": [
+          0.6378137239578594
+        ]
+      },
+      "selected_alpha": [
+        0.0
+      ]
+    },
+    "2": {
+      "cytoalign": {
+        "mean": 0.6378137239578594,
+        "std": 0.0,
+        "values": [
+          0.6378137239578594
+        ]
+      },
+      "cytoalign_minus_ot_hl": {
+        "mean": 0.0,
+        "std": 0.0,
+        "values": [
+          0.0
+        ]
+      },
+      "ot_hl": {
+        "mean": 0.6378137239578594,
+        "std": 0.0,
+        "values": [
+          0.6378137239578594
+        ]
+      },
+      "selected_alpha": [
+        0.0
+      ]
+    }
+  },
+  "experiment": "smoke_knn_residual_curve",
+  "first_count_beating_baseline": {
+    "cell_type_median": 0,
+    "global_median": 0,
+    "knn_hl": null,
+    "mlp_hl": 0,
+    "ridge_hl": 0
+  },
+  "first_count_showing_x_value": null,
+  "fold": 0,
+  "n_seeds": 1,
+  "paired_counts": [
+    0,
+    1,
+    2
+  ],
+  "paired_sets_are_nested": true,
+  "residual_baseline": "knn_hl",
+  "status": "ok",
+  "trend": {
+    "doubling_linear_fit": {
+      "intercept": 0.0,
+      "r_squared": 1.0,
+      "slope": 0.0
+    },
+    "improvement_over_zero": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "monotonic_improvement_steps": 2,
+    "raw_count_linear_fit": {
+      "intercept": 0.0,
+      "r_squared": 1.0,
+      "slope": 0.0
+    },
+    "total_steps": 2
+  }
+}
