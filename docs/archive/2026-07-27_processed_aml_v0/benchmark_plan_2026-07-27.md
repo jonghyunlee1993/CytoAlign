@@ -1,7 +1,10 @@
 # CytoAlign: cross-platform cytometry recoverability benchmark
 
-Archive note: superseded by the 2026-07-28 active benchmark plan; retained for
-protocol-history provenance.
+Archive note: superseded by the current AML–Nuñez landscape plan and retained
+for protocol-history provenance. The disposable runtime outputs referenced
+below were removed at the 2026-07-30 session closeout; see
+`../2026-07-30_processed_aml_session_closeout.md` for durable results and
+recovery details.
 
 마지막 갱신: 2026-07-27  
 상태: protocol draft, processed same-cell conditional sensitivity와

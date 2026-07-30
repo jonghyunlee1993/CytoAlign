@@ -1,0 +1,21 @@
+# Archived completed processed-AML v0 config; not active landscape input.
+extends: aml_h19_addback_screen_v0.yaml
+
+experiment:
+  name: aml_h19_targeted_pairs_v0
+
+sweep:
+  include_single_addbacks: false
+  combination_panels:
+    spectral_flow:
+      pair_ccr7_cd45ra: [CCR7, CD45RA]
+      pair_cd117_cd123: [CD117, CD123]
+      pair_ccr7_cd123: [CCR7, CD123]
+      pair_ccr7_hladr: [CCR7, HLA-DR]
+      pair_cd45ra_hladr: [CD45RA, HLA-DR]
+    cytof:
+      pair_cd45ra_hladr: [CD45RA, HLA-DR]
+      pair_cd45ra_cd38: [CD45RA, CD38]
+      pair_cd45ra_cd123: [CD45RA, CD123]
+      pair_hladr_cd38: [HLA-DR, CD38]
+      pair_cd38_cd123: [CD38, CD123]

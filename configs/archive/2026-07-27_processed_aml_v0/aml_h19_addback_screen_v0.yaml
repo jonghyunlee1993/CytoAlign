@@ -1,0 +1,19 @@
+# Archived completed processed-AML v0 config; not active landscape input.
+extends: aml_same_cell_recoverability_v0.yaml
+
+experiment:
+  name: aml_h19_addback_screen_v0
+
+sweep:
+  base_panel: clinical10
+  upper_panel: h19
+  addback_panels:
+    add_cd25: CD25
+    add_cd27: CD27
+    add_cd38: CD38
+    add_cd117: CD117
+    add_cd123: CD123
+    add_ccr7: CCR7
+    add_pd1: PD-1
+    add_cd45ra: CD45RA
+    add_hladr: HLA-DR

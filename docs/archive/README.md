@@ -17,3 +17,9 @@
 
 현재 통합 해석은 `docs/research_record.md`, 앞으로의 실행 계약은
 `docs/benchmark_plan.md`를 사용한다.
+
+## 2026-07-30 session closeout
+
+`2026-07-30_processed_aml_session_closeout.md`는 checkpoint commit, 삭제한
+disposable output/log/audit state, 유지한 local cache와 AML–Nuñez landscape
+handoff를 기록한다.

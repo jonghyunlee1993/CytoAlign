@@ -2,6 +2,8 @@
 
 Archive note: superseded as the active synthesis by `docs/research_record.md`;
 retained for detailed provenance.
+The disposable `outputs/` tree was removed at the 2026-07-30 session closeout;
+the tables below are the durable result record.
 
 Date: 2026-07-27
 
@@ -215,6 +217,6 @@ evidence.
 - Compact panels and H19 removals:
   `outputs/aml_h19_compact_and_removal_v0/summary/`
 - Configurations:
-  `configs/experiments/aml_h19_addback_screen_v0.yaml`,
-  `configs/experiments/aml_h19_targeted_pairs_v0.yaml`,
-  `configs/experiments/aml_h19_compact_and_removal_v0.yaml`
+  `configs/archive/2026-07-27_processed_aml_v0/aml_h19_addback_screen_v0.yaml`,
+  `configs/archive/2026-07-27_processed_aml_v0/aml_h19_targeted_pairs_v0.yaml`,
+  `configs/archive/2026-07-27_processed_aml_v0/aml_h19_compact_and_removal_v0.yaml`

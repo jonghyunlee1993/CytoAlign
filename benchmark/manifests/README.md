@@ -7,16 +7,17 @@ UTF-8 `records.csv`, 그리고 필요한 row-index/condition content file을 가
 artifact 또는 Git LFS에 두되, local full preflight에서는 실제 file과 digest를
 검증한다.
 
-예정된 하위 디렉터리:
+Landscape v1에서 예정된 하위 디렉터리:
 
 - `data/`: specimen, patient, visit, checksum, event-selection provenance
-- `markers/`: direction별 H/Y/source-only/excluded marker contract
+- `markers/`: AML/Nuñez alias, native H19/H20, universal H9, S* contract
 - `splits/`: patient-grouped frozen outer/validation split
-- `endpoints/`: endpoint coverage, conflicts, eligibility
+- `endpoints/`: target marker와 major/rare endpoint coverage
 - `banks/`: role별 reference bank와 patient/specimen/row-index budget
-- `stress/`: semi-synthetic condition과 random subset draws
+- `panels/`: H9 subset screen과 locked Pareto candidates
+- `pairing/`: pooled, patient-deranged, patient-matched fixed-budget conditions
 
-현재 `configs/benchmark/protocol_v1.yaml`은 `draft`다. Current processed AML
-audit는 source/row digest까지 생성됐지만 conditional sensitivity일 뿐이다.
-Raw technical-QC-only AML manifest와 endpoint conflict rule이 확정되고
-preflight가 통과하기 전에는 `frozen`으로 바꾸지 않는다.
+Active design은 `configs/benchmark/landscape_v1.yaml`이다. 기존
+`configs/benchmark/protocol_v1.yaml`은 processed-AML phase-0 audit test를
+위한 legacy draft다. Landscape manifest schema와 preflight를 연결하기
+전에는 active design을 `frozen`으로 바꾸지 않는다.

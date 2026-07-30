@@ -2,6 +2,8 @@
 
 Archive note: superseded as the active synthesis by `docs/research_record.md`;
 retained for detailed provenance.
+The disposable `outputs/` tree was removed at the 2026-07-30 session closeout;
+the tables below are the durable result record.
 
 ## Question
 
@@ -84,7 +86,7 @@ For each modality, shared panel, fold, and seed:
 ## Implementations
 
 - Experiment config:
-  `configs/experiments/aml_literature_baselines_v0.yaml`
+  `configs/archive/2026-07-27_processed_aml_v0/aml_literature_baselines_v0.yaml`
 - Common evaluator:
   `src/training/literature_baseline.py`
 - Method adapters:

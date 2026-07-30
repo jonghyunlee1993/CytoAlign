@@ -1,6 +1,0 @@
-extends: sf_to_cytof_rare_population_ablation_cv.yaml
-
-experiment:
-  name: sf_to_cytof_rare_population_paired_count_cv
-  paired_counts: [1, 2, 4, 8, 16, 32, "all"]
-  paired_count_unit: patient

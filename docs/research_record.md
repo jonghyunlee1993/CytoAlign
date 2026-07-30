@@ -1,8 +1,9 @@
 # CytoAlign research record
 
-마지막 갱신: 2026-07-28  
-범위: processed AML conditional experiments, 연구 방향 결정, 후속 raw
-benchmark 요구사항
+마지막 갱신: 2026-07-30
+
+범위: processed AML conditional experiments, 완료된 방법 triage, AML–Nuñez
+marker-information landscape로의 전환
 
 ## 1. 이 문서의 역할
 
@@ -10,13 +11,14 @@ benchmark 요구사항
 개별 실행의 상세 표는 `docs/archive/2026-07-27_processed_aml_v0/`에
 보존하며, 앞으로의 실행 계약은 `docs/benchmark_plan.md`에서 관리한다.
 
-현재 결과는 upstream에서 pre-gating된 processed AML 83 patients,
-93 specimens에 조건부다. Raw technical-QC-only event set에서 독립적으로
-확인되기 전에는 full-population prevalence, unseen-population discovery,
-임상적 panel sufficiency 또는 cross-platform 일반화 claim으로 확장하지
-않는다.
+현재 수치 결과는 upstream에서 pre-gating된 processed AML 83 patients,
+93 specimens에 조건부다. 이를 full-population prevalence,
+unseen-population discovery 또는 보편적인 clinical panel sufficiency
+claim으로 확장하지 않는다. 후속 primary estimand는 AML과 Nuñez의
+analysis-ready pre-gated events에서 marker information과 recoverability를
+비교하는 것이다. Raw AML은 event-selection sensitivity로 둔다.
 
-## 2. 대화에서 확정된 연구 방향
+## 2. Processed AML 단계에서 확정된 연구 방향
 
 연구의 초점은 다음 순서로 수렴했다.
 
@@ -380,20 +382,26 @@ distribution 폭을 보존하면서 point skill이 음수였으며, clinical10 U
 
 ## 12. 재현 artifact
 
-- Same-cell summaries:
-  `outputs/aml_same_cell_recoverability_v0/summary/`
-- Single add-back:
-  `outputs/aml_h19_addback_screen_v0/summary/`
-- Targeted pairs:
-  `outputs/aml_h19_targeted_pairs_v0/summary/`
-- Compact/removal:
-  `outputs/aml_h19_compact_and_removal_v0/summary/`
-- Literature comparison:
-  `outputs/aml_literature_baselines_v0/summary/`
-- Machine-readable benchmark protocol:
-  `configs/benchmark/protocol_v1.yaml`
-- Detailed archived reports:
-  `docs/archive/2026-07-27_processed_aml_v0/`
+완료된 processed AML run의 disposable output과 scheduler log는
+2026-07-30 session closeout에서 정리했다. 다음 durable artifact가 결과와
+실행 계약을 보존한다.
+
+- Checkpoint commit: `8fece8b`
+- Same-cell detailed report:
+  `docs/archive/2026-07-27_processed_aml_v0/same_cell_recoverability_v0_results.md`
+- Shared-marker ablation detailed report:
+  `docs/archive/2026-07-27_processed_aml_v0/h19_shared_marker_ablation_v0_results.md`
+- Literature comparison detailed report:
+  `docs/archive/2026-07-27_processed_aml_v0/literature_imputation_baselines_v0.md`
+- Completed experiment configs:
+  `configs/archive/2026-07-27_processed_aml_v0/`
+- Legacy audit contract: `configs/benchmark/protocol_v1.yaml`
+- Active landscape design: `configs/benchmark/landscape_v1.yaml`
+- Session closeout inventory:
+  `docs/archive/2026-07-30_processed_aml_session_closeout.md`
+
+Patient-level output은 Git에 보존하지 않는다. 필요하면 checkpoint의 config,
+code와 frozen sampling rule로 재생성한다.
 
 ## 13. 실행 및 provenance 주의사항
 
@@ -405,7 +413,32 @@ distribution 폭을 보존하면서 point skill이 음수였으며, clinical10 U
   검증했다.
 - LSF `EXIT 255` 중 application 시작 전 job-file staging failure는 동일
   command로 재제출하고 failed artifact를 보존했다.
-- 현재 전체 test suite는 `100 passed`다.
+- Checkpoint `8fece8b`에서 test suite는 `90 passed, 6 skipped`였다.
 - 이 환경에서는 login shell 초기화가 `no direct access allowed`를 출력할
   수 있다. Repository 검사와 로컬 실행은 명시적으로 non-login shell
   (`login=false`, 또는 동등한 `bash --noprofile --norc`)을 사용한다.
+
+## 14. AML–Nuñez marker-information landscape 전환
+
+2026-07-30에 다음 방향을 active plan으로 고정했다.
+
+1. 새 imputation architecture를 개발하지 않는다.
+2. AML과 Nuñez를 처음부터 같은 landscape benchmark에 포함한다.
+3. 각 cohort의 native shared panel(H19/H20), 네 panel의 universal H9,
+   AML에서 선택한 minimal S*를 비교한다.
+4. Within-modality `H→X/Y`에서 exact same-cell marker difficulty를 측정한다.
+5. Cross-modality에서는 양방향 `H` 대 `H+exclusive`를 비교하되
+   aliquot-level pairing에 맞게 sample distribution과 cell-level surrogate
+   biology만 평가한다.
+6. Marker relationship은 marginal association, single-marker skill,
+   add-back gain과 leave-one-out loss를 분리한다.
+7. H9 subset의 marker-count–information Pareto frontier를 primary panel
+   result로 삼고, 하나의 S*는 operating point로만 보고한다.
+8. Pairing은 matched, patient-deranged, pooled/unpaired와 target prior의
+   fixed-budget 비교로 검증한다.
+9. Major-cell classification은 structural safety endpoint, AML `T cell gd`와
+   Nuñez `CD3+ TCRgd+`는 prespecified rare endpoint로 둔다.
+
+이 전환 이후 processed compact panel과 deep literature comparison은
+hypothesis-generation provenance다. 새 benchmark의 panel이나 model을
+결정하는 confirmatory evidence로 재사용하지 않는다.

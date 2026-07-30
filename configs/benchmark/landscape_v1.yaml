@@ -1,0 +1,301 @@
+protocol:
+  id: paired_cytometry_marker_landscape_v1
+  status: draft
+  version: 1
+  created_date: "2026-07-30"
+  scientific_contract: docs/benchmark_plan.md
+  discovery_cohort: aml
+  external_panel_validation_cohort: nunez
+
+objective:
+  primary: marker_information_and_recoverability_landscape
+  new_model_development: forbidden
+  claims:
+    - within_modality_same_cell_recoverability
+    - predictive_marker_relationship
+    - marker_count_information_pareto_front
+    - cross_modality_distribution_degradation
+    - source_exclusive_gain
+    - patient_pairing_gain
+    - major_and_rare_biology_preservation
+
+cohorts:
+  aml:
+    role: discovery_and_within_cohort_evaluation
+    modality_a: spectral_flow
+    modality_b: cytof
+    event_scope: upstream_pregated_processed_events
+    patients: 83
+    paired_specimens: 93
+    native_shared_panel: aml_h19
+    raw_role: selection_sensitivity_only
+  nunez:
+    role: locked_panel_external_validation_and_within_cohort_evaluation
+    modality_a: facsymphony
+    modality_b: cytof
+    event_scope: all_released_pregated_rows
+    patients: 51
+    paired_visits: 164
+    native_shared_panel: nunez_h20
+    missing_public_pairs: 41
+
+notation:
+  H: markers_shared_by_modality_a_and_b
+  X: modality_a_exclusive_markers
+  Y: modality_b_exclusive_markers
+  same_cell_tasks:
+    - modality_a_H_to_X
+    - modality_b_H_to_Y
+  cross_modality_tasks:
+    - modality_a_H_to_modality_b_Y
+    - modality_a_H_plus_X_to_modality_b_Y
+    - modality_b_H_to_modality_a_X
+    - modality_b_H_plus_Y_to_modality_a_X
+
+marker_aliases:
+  PD-1: [PD-1, PD1, CD279]
+  CCR7: [CCR7, CD197]
+  CTLA-4: [CTLA-4, CTLA4]
+  Ki-67: [Ki-67, KI67, Ki67]
+  TCRgd: [TCRgd, TCRGD, PANGD, PANGT]
+  IgD: [IgD, IGD]
+  GZMB: [GranzymeB, GYMB, GZMB]
+  IgG4: [IgG4, IGG4]
+
+panels:
+  aml_h19:
+    - CD3
+    - CD4
+    - CD8
+    - CD14
+    - CD19
+    - CD20
+    - CD25
+    - CD27
+    - CD33
+    - CD34
+    - CD38
+    - CD45
+    - CD45RA
+    - CD56
+    - HLA-DR
+    - CD117
+    - CD123
+    - CCR7
+    - PD-1
+  nunez_h20:
+    - CD3
+    - CD4
+    - CD8
+    - CD16
+    - CD19
+    - CD27
+    - CD39
+    - CD45RA
+    - CD45RO
+    - CD56
+    - CTLA-4
+    - EOMES
+    - FOXP3
+    - GZMB
+    - HLA-DR
+    - IgG4
+    - Ki-67
+    - KLRG1
+    - PD-1
+    - TCRgd
+  universal_h9:
+    - CD3
+    - CD4
+    - CD8
+    - CD19
+    - CD27
+    - CD45RA
+    - CD56
+    - HLA-DR
+    - PD-1
+  minimal_s_star:
+    status: select_on_aml_then_lock
+    candidate_universe: universal_h9
+
+split:
+  inference_unit: patient
+  n_outer_folds: 5
+  validation_fraction: 0.15
+  fold_seed: 42
+  longitudinal_patient_grouping: required
+  dynamic_rebuild_after_results: forbidden
+
+sampling:
+  algorithm: deterministic_reservoir
+  maximum_cells_per_specimen: 50000
+  row_bank_shared_across_methods: true
+  patient_then_equal_specimen_weighting: true
+
+information_access:
+  imputer_cell_labels: forbidden
+  matching_cell_labels: forbidden
+  imputer_endpoint_labels: forbidden
+  test_target_statistics: forbidden
+  test_guided_panel_selection: forbidden
+  evaluation_labels: evaluation_only
+
+methods:
+  null:
+    - fit_patient_balanced_marker_median
+    - target_prior_sampler
+  primary:
+    - ridge
+    - exact_knn50
+    - simple_mlp
+  primary_interpretation:
+    ridge: linear_relationship_probe
+    exact_knn50: local_relationship_probe
+    simple_mlp: fixed_nonlinear_probe
+  mlp:
+    hidden_layers: [128, 128]
+    seeds: [4207, 4208, 4209]
+    hyperparameter_search: forbidden
+    run_scope: final_candidate_panels_only
+  literature_reference:
+    status: deferred_until_primary_landscape_complete
+    representative_regimes: [easy, intermediate, impossible]
+    candidates: [cycombine, cytovi, uvae]
+
+within_modality_evaluation:
+  exact_same_cell_truth: true
+  point:
+    - fit_median_null_relative_normalized_mae_skill
+    - within_specimen_spearman
+  distribution:
+    - normalized_wasserstein_1d
+    - median_error
+    - positive_fraction_error
+    - iqr_retention
+    - upper_quantile_error
+    - joint_structure_error
+  representation:
+    - full_vs_imputed_knn_jaccard
+    - neighborhood_label_purity
+    - fixed_full_marker_classifier_replay
+
+relationship_landscape:
+  marginal:
+    - spearman
+  predictive:
+    - single_marker_skill
+    - addback_gain
+    - leave_one_out_loss
+    - model_family_concordance
+    - cross_cohort_edge_concordance
+  exhaustive_subset_screen:
+    panel: universal_h9
+    nonempty_subsets: 511
+    selection_cohort: aml
+    screen_model: ridge
+    confirmation_model: exact_knn50
+    derived_outputs:
+      - marker_shapley_style_contribution
+      - pairwise_interaction
+      - cardinality_utility_pareto_front
+
+minimal_panel_selection:
+  selection_cohort: aml
+  external_evaluation_cohort: nunez
+  minimum_mean_utility_retention_vs_h9: 0.95
+  require_lower_quartile_target_guardrail: true
+  require_major_cell_noninferiority: true
+  require_prespecified_rare_endpoint_guardrail: true
+  tie_break:
+    - fewer_markers
+    - higher_lower_quartile_utility
+    - higher_mean_utility
+  mlp_may_change_selected_panel: false
+  nunez_reselection: forbidden
+
+cross_modality_bridge:
+  same_cell_pairing_available: false
+  common_space: fit_patient_percentile_calibration
+  training_pseudotarget: label_free_h_only_mass_preserving_matching
+  matching_rule_selection: validation_once_then_frozen
+  compare_feature_modes:
+    - H_only
+    - H_plus_source_exclusive
+  directions:
+    - modality_a_to_b
+    - modality_b_to_a
+
+pairing_controls:
+  fixed_reference_budget: required
+  conditions:
+    - target_prior
+    - identity_blind_pooled
+    - patient_deranged
+    - patient_matched
+  multiple_frozen_derangements: required
+  report:
+    - platform_penalty
+    - source_exclusive_gain
+    - patient_pairing_gain
+
+cross_modality_evaluation:
+  forbidden_claims:
+    - same_cell_mae
+    - same_cell_correlation
+    - cross_modality_neighbor_identity
+  sample_level:
+    - normalized_wasserstein_1d
+    - median_error
+    - iqr_error
+    - positive_fraction_error
+    - tail_error
+    - joint_mmd_or_energy
+    - evaluation_state_conditional_density
+  cell_level_surrogate:
+    - target_classifier_replay_on_imputed_source_cells
+    - major_cell_auprc
+    - rare_cell_auprc
+    - prevalence_error
+    - neighborhood_label_purity
+    - imputed_vs_target_knn_two_sample_discrimination
+    - local_density_and_support
+
+biology:
+  major_cell_role: structural_safety_not_marker_recovery_evidence
+  prespecified_rare_endpoints:
+    aml:
+      - manual_cytof_t_cell_gd
+    nunez:
+      - full_truth_cd3_positive_tcrgd_positive
+  additional_functional_states:
+    role: secondary_only
+    prerequisite: frozen_rule_threshold_and_minimum_support
+
+raw_aml_sensitivity:
+  primary_prerequisite: false
+  event_views:
+    - current_processed
+    - raw_on_processed_mappable_rows
+    - raw_technical_qc_only
+  escalation_rule: expand_only_if_marker_difficulty_or_rare_conclusion_changes
+
+execution:
+  phases:
+    - freeze_marker_split_row_and_endpoint_manifests
+    - within_modality_native_h_and_h9
+    - aml_h9_subset_landscape_and_s_star_lock
+    - nunez_s_star_external_evaluation
+    - bidirectional_cross_modality_degradation
+    - final_landscape_synthesis
+  first_smoke_tests:
+    - aml_h9_one_fold_ridge_and_knn
+    - nunez_h9_one_fold_ridge_and_knn
+
+reporting:
+  patient_first_uncertainty: required
+  separate_fidelity_axes: [point, distribution, major_biology, rare_biology]
+  record_git_state: true
+  record_protocol_digest: true
+  record_manifest_digests: true
+  record_sampled_row_indices: true
+  record_information_access: true

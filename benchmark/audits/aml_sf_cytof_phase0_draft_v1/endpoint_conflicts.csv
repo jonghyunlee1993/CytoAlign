@@ -1,6 +1,0 @@
-conflict_type,patient_id,specimen_id,endpoint,values,provenance
-duplicate_exact_annotation,R3945,R3945_7665,ALL,2,cytof
-duplicate_exact_annotation,R3945,R3945_7665,ALL,2,spectral_flow
-single_annotation_source,R4318,R4318_8712,ALL,spectral_flow,requires_common_clinical_provenance_review
-longitudinal_patient,R3582,R3582_6985;R3582_7024,FLT3,Mutant;Wildtype,specimen_level_status_disagreement
-longitudinal_patient,R3594,R3594_7006;R3594_7140,FLT3,Mutant;Wildtype,specimen_level_status_disagreement

@@ -2,6 +2,8 @@
 
 Archive note: superseded as the active synthesis by `docs/research_record.md`;
 retained for detailed provenance.
+The disposable `outputs/` tree was removed at the 2026-07-30 session closeout;
+the tables below are the durable result record.
 
 Date: 2026-07-27
 
