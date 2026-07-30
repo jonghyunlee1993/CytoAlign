@@ -1,0 +1,74 @@
+experiment:
+  name: aml_same_cell_recoverability_v0
+
+data:
+  root: data/AML
+  cache_root: data/AML/self_recoverability_cache/processed_seed4207
+  split_manifest: benchmark/audits/aml_sf_cytof_phase0_draft_v1/split_manifest.json
+  row_index_root: benchmark/audits/aml_sf_cytof_phase0_draft_v1/reference_rows
+  row_index_seed: 4207
+
+panels:
+  h19:
+    markers:
+      - CD3
+      - CD4
+      - CD8
+      - CD14
+      - CD19
+      - CD20
+      - CD25
+      - CD27
+      - CD33
+      - CD34
+      - CD38
+      - CD45
+      - CD56
+      - CD117
+      - CD123
+      - CCR7
+      - PD-1
+      - CD45RA
+      - HLA-DR
+  clinical10:
+    markers:
+      - CD3
+      - CD4
+      - CD8
+      - CD14
+      - CD19
+      - CD20
+      - CD33
+      - CD34
+      - CD45
+      - CD56
+
+training:
+  device: cuda
+  fit_sample_seed: 4207
+  cells_per_fit_patient: 5000
+  knn:
+    k: 50
+    max_reference_cells: 50000
+    query_chunk_size: null
+    distance_memory_fraction: 0.08
+  mlp:
+    hidden_dims: [128, 128]
+    epochs: 30
+    batch_size: 4096
+    learning_rate: 0.001
+    patience: 5
+
+classifier:
+  c: 1.0
+  max_iter: 1000
+  maximum_cells_per_class: 10000
+  sample_seed: 4207
+  seed: 4207
+
+evaluation:
+  shuffle_seed: 17831
+
+output:
+  root: outputs
+

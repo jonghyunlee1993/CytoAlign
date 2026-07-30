@@ -5,6 +5,7 @@
 /outputs/
 /logs/
 /log/
+/benchmark/audits/*/reference_rows/
 
 # External baselines and local environments
 /baseline/

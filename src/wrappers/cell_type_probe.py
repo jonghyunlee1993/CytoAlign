@@ -40,6 +40,7 @@ def main() -> None:
             expected_folds=int(config["data"]["split"]["n_splits"]),
             bootstrap_replicates=int(config["probe"]["bootstrap_replicates"]),
             seed=int(config["experiment"]["seed"]),
+            result_seed=args.seed,
         )
         print(json.dumps(result, sort_keys=True))
         return

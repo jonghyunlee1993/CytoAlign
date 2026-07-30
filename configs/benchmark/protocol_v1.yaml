@@ -1,0 +1,163 @@
+protocol:
+  id: cytometry_recoverability_v1
+  status: draft
+  version: 1
+  created_date: "2026-07-25"
+  updated_date: "2026-07-28"
+  scientific_contract: docs/benchmark_plan.md
+  execution_guide: docs/benchmark_plan.md
+
+information_access:
+  translator_cell_labels: forbidden
+  translator_endpoint_labels: forbidden
+  downstream_outcome_labels: outer_train_only
+  test_target_statistics: forbidden
+  label_informed_track: oracle_supplement_only
+
+data:
+  sampling: reservoir
+  max_cells_per_specimen: 50000
+  inference_unit: patient
+  longitudinal_aggregation: patient_first_equal_specimen_weight
+  specimen_event_policy:
+    primary_min_events_per_modality: 1
+    low_event_flag_below: 500
+    primary_low_event_action: include_with_flag
+    sensitivity_exclude_below: 500
+  authoritative_metadata:
+    artifact_id: AML_meta_111224
+    expected_sha256: 5df64176e7ede9fb5fcb1239bb84d95b0ea107ce6e7cb295a6ee0a52874a68f2
+    release_reference: pending
+    patient_column: Reg. ID
+    visit_column: Coll. ID
+    collection_date_column: Date
+    date_format: "%m/%d/%y"
+  event_selection:
+    primary_requirement: label_free
+    conditional_pregated_fallback_requires_claim_restriction: true
+    aml_primary_source_level: raw_fcs
+    aml_primary_rule: technical_qc_only
+    aml_processed_role: conditional_sensitivity_only
+    nunez_local_row_selection: all_public_pregated_rows
+    evaluation_labels_for_event_selection: forbidden
+
+split:
+  n_splits: 5
+  validation_fraction: 0.15
+  fold_seed: 42
+  frozen_manifest_required: true
+  dynamic_rebuild_forbidden: true
+  sensitivity_patient_fold_policy: preserve_primary_assignments
+
+training:
+  label_conditioning: false
+  seeds: [4207, 4208, 4209]
+
+reference_bank:
+  primary_mode: data_matched
+  patient_set: outer_training_target
+  specimen_set: all_eligible
+  cells_per_specimen_cap: 50000
+  patient_weighting: patient_then_equal_specimen
+  sampled_rows_shared_across_methods: true
+  pairing_curve_holds_bank_fixed: true
+  native_bank_deviation: secondary_only
+  record_actual_budget: true
+  fit_stages:
+    inner_fit: [train]
+    outer_refit: [train, validation]
+
+evaluation:
+  label_stratified_selection: false
+  require_exact_specimen_keys: true
+  primary_scale: target_training_patient_balanced_iqr
+  zero_iqr_fallback: [target_training_patient_balanced_mad, locked_minimum_scale]
+  upper_quantile: 0.90
+  required_tracks: [marginal, joint, individualization]
+  required_nulls:
+    - global_target_median
+    - target_prior_sampler
+    - wrong_patient_reference
+    - row_shuffled_observed_markers
+  split_half_interpretation: finite_cell_sampling_floor
+
+confirmatory_panels:
+  target_set: full_panel_minus_h19
+  adaptive_reselection_under_same_protocol: forbidden
+  clinical10:
+    - CD3
+    - CD4
+    - CD8
+    - CD14
+    - CD19
+    - CD20
+    - CD33
+    - CD34
+    - CD45
+    - CD56
+  spectral_flow:
+    lower_bound: clinical10
+    compact_additions: [CCR7, CD117, CD123]
+    upper_reference: h19
+  cytof:
+    lower_bound: clinical10
+    compact_candidate_a_additions: [CD45RA, HLA-DR, CD38]
+    compact_candidate_b_additions: [CD45RA, CD38, CD123]
+    upper_reference: h19
+  clinical_h4:
+    role: secondary_stress_only
+    prerequisite: raw_label_free_detector_audit
+
+endpoint_policy:
+  role: secondary_clinical_illustration
+  exact_duplicate: deduplicate_with_audit
+  single_source_annotation: unknown_until_common_provenance
+  cross_source_conflict: not_evaluable
+  longitudinal_conflict: endpoint_specific_not_evaluable
+  ever_mutant_collapse: forbidden
+  formal_support_min_total_per_class: 20
+  formal_support_min_test_fold_per_class: 3
+
+methods:
+  primary:
+    - global_target_median
+    - target_prior_sampler
+    - ridge
+    - knn50
+    - boosted_tree
+    - simple_mlp
+  secondary_reference:
+    - cytobackbone
+    - cycombine
+    - cytovi
+    - uvae
+  secondary_reference_promotion:
+    requirement: validation_locked_gain_in_intermediate_recoverability_regime
+  forbidden_primary:
+    - cell_type_median
+    - label_conditioned_ridge
+    - label_conditioned_knn
+
+manifests:
+  data: benchmark/manifests/data/index.yaml
+  markers: benchmark/manifests/markers/index.yaml
+  splits: benchmark/manifests/splits/index.yaml
+  endpoints: benchmark/manifests/endpoints/index.yaml
+  banks: benchmark/manifests/banks/index.yaml
+  stress: benchmark/manifests/stress/index.yaml
+
+manifest_digests:
+  data: pending
+  markers: pending
+  splits: pending
+  endpoints: pending
+  banks: pending
+  stress: pending
+
+reporting:
+  record_git_state: true
+  record_protocol_digest: true
+  record_manifest_digests: true
+  record_accessed_information: true
+  record_sampled_row_indices: true
+  record_method_failures: true

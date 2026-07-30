@@ -1,0 +1,74 @@
+extends: aml_h19_addback_screen_v0.yaml
+
+experiment:
+  name: aml_h19_compact_and_removal_v0
+
+sweep:
+  include_single_addbacks: false
+  custom_panels:
+    spectral_flow:
+      compact_ccr7_cd45ra_cd123:
+        operation: add_to_base
+        kind: compact_candidate
+        markers: [CCR7, CD45RA, CD123]
+      compact_ccr7_cd117_cd123:
+        operation: add_to_base
+        kind: compact_candidate
+        markers: [CCR7, CD117, CD123]
+      h19_minus_ccr7:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [CCR7]
+      h19_minus_cd45ra:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [CD45RA]
+      h19_minus_cd117:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [CD117]
+      h19_minus_cd123:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [CD123]
+      h19_minus_hladr:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [HLA-DR]
+    cytof:
+      compact_cd45ra_hladr_cd38:
+        operation: add_to_base
+        kind: compact_candidate
+        markers: [CD45RA, HLA-DR, CD38]
+      compact_cd45ra_cd38_cd123:
+        operation: add_to_base
+        kind: compact_candidate
+        markers: [CD45RA, CD38, CD123]
+      h19_minus_cd45ra:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [CD45RA]
+      h19_minus_hladr:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [HLA-DR]
+      h19_minus_cd38:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [CD38]
+      h19_minus_cd123:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [CD123]
+      h19_minus_cd27:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [CD27]
+      h19_minus_pd1:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [PD-1]
+      h19_minus_cd25:
+        operation: remove_from_upper
+        kind: selected_removal
+        markers: [CD25]

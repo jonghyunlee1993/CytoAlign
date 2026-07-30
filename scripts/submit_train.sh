@@ -28,6 +28,11 @@ for fold in $folds; do
     [[ "$fold" =~ ^[0-9]+$ && "$seed" =~ ^[0-9]+$ ]]
     job_name="${experiment}.f${fold}.s${seed}"
     command=(
+      env
+      "OMP_NUM_THREADS=$cpu_cores"
+      "MKL_NUM_THREADS=$cpu_cores"
+      "OPENBLAS_NUM_THREADS=$cpu_cores"
+      "NUMEXPR_NUM_THREADS=$cpu_cores"
       "$python_bin" -m src.wrappers.train
       --config "$config"
       --fold "$fold"

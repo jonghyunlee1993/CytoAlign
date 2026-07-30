@@ -1,0 +1,104 @@
+experiment:
+  name: aml_literature_baselines_v0
+
+data:
+  root: data/AML
+  cache_root: data/AML/self_recoverability_cache/processed_seed4207
+  split_manifest: benchmark/audits/aml_sf_cytof_phase0_draft_v1/split_manifest.json
+  row_index_root: benchmark/audits/aml_sf_cytof_phase0_draft_v1/reference_rows
+  row_index_seed: 4207
+
+panels:
+  h19:
+    markers:
+      - CD3
+      - CD4
+      - CD8
+      - CD14
+      - CD19
+      - CD20
+      - CD25
+      - CD27
+      - CD33
+      - CD34
+      - CD38
+      - CD45
+      - CD56
+      - CD117
+      - CD123
+      - CCR7
+      - PD-1
+      - CD45RA
+      - HLA-DR
+  clinical10:
+    markers:
+      - CD3
+      - CD4
+      - CD8
+      - CD14
+      - CD19
+      - CD20
+      - CD33
+      - CD34
+      - CD45
+      - CD56
+
+training:
+  device: cuda
+  fit_sample_seed: 4207
+  cells_per_fit_patient: 5000
+  reference_bank:
+    max_reference_cells: 50000
+    seed: 4207
+
+methods:
+  cycombine:
+    implementation: function_level_adaptation_of_official_panel_merging
+    device: cpu
+    script: scripts/cycombine_panel_impute.R
+    rscript: /project/kimlab_tcga/JH_workspace/conda_envs/cytometry_r_baselines/bin/Rscript
+    xdim: 8
+    ydim: 8
+    rlen: 10
+    minimum_reference_cells: 50
+    distance: sumofsquares
+  cytovi:
+    implementation: scvi_tools_1.5.0_post1
+    device: cuda
+    max_epochs: 100
+    batch_size: 1024
+    learning_rate: 0.001
+    n_hidden: 128
+    n_latent: 10
+    n_layers: 1
+    prior_mixture: true
+    early_stopping_patience: 10
+    n_samples: 1
+    max_training_cells_per_epoch: 100000
+    n_epochs_kl_warmup: 30
+    max_query_training_cells: 50000
+  uvae:
+    implementation: official_github_checkout
+    device: cuda
+    runner: scripts/run_uvae_external.py
+    python: /project/kimlab_tcga/JH_workspace/conda_envs/uvae_baselines/bin/python
+    external_root: /project/kimlab_tcga/JH_workspace/external/UVAE
+    epochs: 20
+    batch_size: 512
+    latent_dim: 50
+    hidden: 2
+    width: 256
+    pull: 1.0
+    early_stop_epochs: 0
+    samples_per_epoch: 100000
+    max_query_training_cells: 50000
+
+classifier:
+  c: 1.0
+  max_iter: 1000
+  maximum_cells_per_class: 10000
+  sample_seed: 4207
+  seed: 4207
+
+output:
+  root: outputs

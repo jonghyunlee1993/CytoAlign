@@ -1,33 +1,36 @@
 # CytoAlign
 
-CytoAlign은 cell-unpaired Spectral Flow `H+X`에서 CyTOF-exclusive `Y`를
-translation할 때, H-only kNN이 잃는 rare fine-cell-type 정보를 `X`가
-복원할 수 있는지 검증하는 연구 코드다.
+CytoAlign의 현재 연구 방향은 새 imputation architecture 개발보다
+cross-platform cytometry recoverability benchmark를 먼저 확립하는 것이다.
+Common-marker backbone `H`만으로 target-exclusive marker `Y`가 언제
+복원되고, 언제 calibration·support·conditional ambiguity 때문에 실패하는지
+patient-level로 평가한다.
 
-현재 결론과 다음 실험 계약:
+현재까지의 대화, processed AML 실험과 통합 해석은
+[research record](docs/research_record.md)에 정리한다. 앞으로의 raw
+benchmark 계약과 실행 gate는 [benchmark plan](docs/benchmark_plan.md)을
+사용한다. 대체된 상세 결과 문서는
+[`docs/archive/`](docs/archive/README.md)에 provenance로 보존한다.
 
-- [현재 결과와 다음 실험](docs/current_findings_and_next_experiment.md)
-- [전체 실험 회고](docs/experiment_retrospective.md)
-- [현재 구현 설계](docs/design.md)
+Machine-readable protocol은
+[`configs/benchmark/protocol_v1.yaml`](configs/benchmark/protocol_v1.yaml)에
+있다. 현재 상태는 의도적으로 `draft`이며
+data/marker/split/endpoint/reference-bank/stress manifest가 고정되기 전에는
+full benchmark를 실행하지 않는다.
 
-과거 raw outputs, scheduler logs, compact records, archive slides, stopped
-prototype와 local third-party baseline bundle은 문서로 통합한 뒤 제거했다.
-`data/`는 로컬 원자료이며 Git에 포함되지 않는다.
+## 현재 우선순위
 
-## 현재 질문
+1. AML raw FCS technical-QC-only event-set rebuild
+2. Raw data/marker/patient split/reference-bank manifest 동결과 full preflight
+3. H19, clinical10과 frozen compact candidates의 within-platform 확인
+4. Conditional ambiguity와 support failure-mode positive control
+5. Target-prior/wrong-patient null을 포함한 AML 양방향 cross-platform benchmark
+6. Validation-locked abstention과 Nuñez external validation
 
-다음 네 표현을 동일한 OT teacher와 residual capacity 아래 비교한다.
-
-```text
-1. kNN(H)
-2. kNN(H) + residual(H)
-3. kNN(H) + residual(H, shuffled X)
-4. kNN(H) + residual(H, correct X)
-```
-
-primary endpoint는 translated `Y`만 사용한 DN/DP AUPRC와 recall이다.
-cell-type label은 translator 학습에 들어가지 않고 held-out probe에만
-사용한다.
+Clinical-flow H4 분석은 raw detector channel의 label-free audit를 통과한
+경우에만 secondary stress test로 진행한다. 과거 OT/residual 실험은
+processed-data conditional method triage로만 취급하며 benchmark primary
+method로 사용하지 않는다.
 
 ## Setup
 
@@ -37,35 +40,24 @@ python -m pip install -e '.[neural,dev]'
 
 LPC CUDA runtime과 맞는 PyTorch build가 필요하다.
 
-## Test
+## Protocol preflight
+
+```bash
+python -m src.wrappers.benchmark_preflight \
+  --protocol configs/benchmark/protocol_v1.yaml
+```
+
+이 명령은 protocol digest와 누락된 manifest를 보고한다. Full run gate에서는
+`--mode full`을 사용하며 frozen protocol, index/record/reference digest와
+cross-manifest identifier consistency를 함께 검사한다.
+
+## Tests
 
 ```bash
 pytest -q
 ```
 
-## 5-fold run
-
-```bash
-QUEUE=dbeigpu \
-GPU_REQUEST='num=1:mig=1/1:mode=shared:gmodel=NVIDIAH200' \
-FOLDS='0 1 2 3 4' \
-SEEDS='4207' \
-scripts/submit_train.sh \
-  configs/experiments/sf_to_cytof_rare_population_ablation_cv.yaml
-```
-
-queue, GPU request, CPU, memory, walltime와 Python executable은 각각
-`QUEUE`, `GPU_REQUEST`, `CPU_CORES`, `MEMORY_MB`, `WALLTIME`,
-`PYTHON_BIN`으로 지정한다.
-
-모든 fold가 끝난 뒤 patient-first summary를 만든다.
-
-```bash
-python -m src.wrappers.cell_type_probe \
-  --config configs/experiments/sf_to_cytof_rare_population_ablation_cv.yaml \
-  --summarize
-```
-
-생성되는 `outputs/`와 `logs/`는 disposable run state이며 Git에
-commit하지 않는다. 재실행 전에는 config와 Git commit을 결과 메타데이터에
-기록한다.
+`data/`는 로컬 원자료이며 Git에 포함되지 않는다. `outputs/`, scheduler
+logs, checkpoints와 large predictions도 disposable run state다. Release에는
+frozen manifests, checksums, environment, patient-level OOF artifacts와
+figure source tables를 별도로 보존한다.
